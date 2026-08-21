@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+httpx
+cachetools
+jinja2
+httpx[http2]

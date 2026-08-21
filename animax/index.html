@@ -1,0 +1,2367 @@
+<!-- --- index.html --- -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Animax</title>
+    <meta name="theme-color" content="#050505">
+    
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="icon" type="image/png" href="static/white_logo.png">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        /* --- 1. Cinematic Startup Animation --- */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-app);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s var(--ease-in-out), transform 0.8s var(--ease-in-out);
+            overflow: hidden;
+        }
+
+        #splash-canvas {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .splash-logo-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            filter: drop-shadow(0 0 0px var(--brand));
+            transition: filter 0.8s var(--ease-out-expo), transform 1s var(--ease-out-expo);
+            z-index: 10;
+        }
+
+        .splash-logo-container.glow {
+            filter: drop-shadow(0 0 30px var(--brand-dim));
+            transform: scale(1.05);
+        }
+
+        /* SVG Draw Logic */
+        .svg-stroke {
+            stroke: var(--brand);
+            stroke-width: 2.5;
+            fill: transparent;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+        }
+
+        .svg-fill {
+            fill: var(--brand);
+            opacity: 0;
+        }
+
+        .animate-draw .svg-stroke {
+            animation: 
+                drawPath 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+                fadeOutStroke 0.5s ease-out 1.3s forwards;
+        }
+        
+        .animate-draw .svg-fill {
+            animation: fadeInFill 0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.1s forwards;
+        }
+
+        @keyframes drawPath {
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes fadeOutStroke {
+            from { opacity: 1; }
+            to { opacity: 0; stroke: transparent; }
+        }
+        @keyframes fadeInFill {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* --- Xmas Theme Santa Hat Overlay --- */
+        .santa-hat {
+            position: absolute;
+            top: -34px;
+            left: -12px;
+            width: 95px;
+            height: 75px;
+            pointer-events: none;
+            z-index: 100;
+            transform: rotate(-10deg);
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+            display: none;
+            overflow: visible;
+        }
+        .theme-xmas .santa-hat {
+            display: block;
+        }
+
+        /* --- USA Theme: Uncle Sam Hat Overlay --- */
+        .uncle-sam-hat {
+            position: absolute;
+            top: -65px;
+            left: -2px;
+            width: 86px;
+            height: 96px;
+            pointer-events: none;
+            z-index: 100;
+            transform: rotate(-8deg);
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+            display: none;
+        }
+        .theme-usa .uncle-sam-hat {
+            display: block;
+        }
+
+        /* --- USA Theme: Firework Burst Flash --- */
+        .firework-flash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.12), transparent 60%);
+            opacity: 0;
+            display: none;
+        }
+        .theme-usa .firework-flash {
+            display: block;
+        }
+
+        /* --- Spooky Theme: Jack-o-Lantern Overlay --- */
+        .jack-o-lantern {
+            position: absolute;
+            top: -50px;
+            right: -28px;
+            width: 92px;
+            height: 92px;
+            pointer-events: none;
+            z-index: 100;
+            filter: drop-shadow(0 0 20px rgba(255,117,24,0.65));
+            display: none;
+            animation: pumpkinBob 2.6s ease-in-out infinite;
+        }
+        .theme-spooky .jack-o-lantern {
+            display: block;
+        }
+        @keyframes pumpkinBob {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50% { transform: translateY(-8px) rotate(6deg); }
+        }
+
+        /* --- Football Theme: Field Goal Scene --- */
+        .field-goal-scene {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .theme-football .field-goal-scene {
+            display: flex;
+        }
+        .goal-post-svg {
+            width: 240px;
+            height: auto;
+            opacity: 0.85;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
+            transform: translateY(18%);
+            transform-origin: bottom center;
+        }
+        .theme-football .goal-post-svg {
+            animation: postShake 2.8s ease-in-out infinite;
+        }
+        @keyframes postShake {
+            0%, 43% { transform: translateY(18%) rotate(0deg); }
+            47% { transform: translateY(18%) rotate(1.2deg); }
+            52% { transform: translateY(18%) rotate(-0.9deg); }
+            58% { transform: translateY(18%) rotate(0.5deg); }
+            65% { transform: translateY(18%) rotate(-0.2deg); }
+            74%, 100% { transform: translateY(18%) rotate(0deg); }
+        }
+
+        .field-goal-ball {
+            position: absolute;
+            left: 50%;
+            bottom: 9%;
+            width: 24px;
+            height: 24px;
+            margin-left: -12px;
+            z-index: 6;
+            animation: fieldGoalKick 2.8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+        }
+        @keyframes fieldGoalKick {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                opacity: 1;
+                filter: blur(0px);
+            }
+            45% {
+                transform: translate(12px, -220px) scale(0.4) rotate(360deg);
+                opacity: 1;
+                filter: blur(1px);
+            }
+            55% {
+                transform: translate(15px, -240px) scale(0.25) rotate(420deg);
+                opacity: 0.9;
+                filter: blur(1.5px);
+            }
+            70% {
+                transform: translate(15px, -190px) scale(0.2) rotate(480deg);
+                opacity: 0;
+                filter: blur(3px);
+            }
+            100% {
+                transform: translate(15px, -190px) scale(0.2) rotate(480deg);
+                opacity: 0;
+            }
+        }
+
+        /* --- World Cup Theme: Goal Net Scene --- */
+        .soccer-goal-scene {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .theme-wc .soccer-goal-scene {
+            display: flex;
+        }
+        .goal-net-svg {
+            width: 230px;
+            height: auto;
+            opacity: 0.85;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+            transform: translateY(16%);
+            transform-origin: top center;
+        }
+        .theme-wc .goal-net-svg {
+            animation: netShake 2.4s ease-in-out infinite;
+        }
+        @keyframes netShake {
+            0%, 48% { transform: translateY(16%) scale(1); }
+            52% { transform: translateY(14%) scale(1.03, 0.97); }
+            58% { transform: translateY(17%) scale(0.97, 1.03); }
+            66% { transform: translateY(15.5%) scale(1.01, 0.99); }
+            76%, 100% { transform: translateY(16%) scale(1); }
+        }
+
+        .soccer-kick-ball {
+            position: absolute;
+            left: 50%;
+            bottom: 6%;
+            width: 22px;
+            height: 22px;
+            margin-left: -11px;
+            z-index: 6;
+            animation: soccerKick 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+        }
+        @keyframes soccerKick {
+            0% {
+                transform: translate(-90px, 0) scale(1.3) rotate(0deg);
+                opacity: 1;
+                filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+            }
+            50% {
+                transform: translate(0px, -92px) scale(0.65) rotate(320deg);
+                opacity: 1;
+                filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
+            }
+            58% {
+                transform: translate(3px, -98px) scale(0.55) rotate(370deg);
+                opacity: 0.95;
+            }
+            70% {
+                transform: translate(5px, -70px) scale(0.5) rotate(410deg);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(5px, -70px) scale(0.5) rotate(410deg);
+                opacity: 0;
+            }
+        }
+
+        /* --- Baseball Theme: Home Run Scene --- */
+        .homerun-scene {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .theme-baseball .homerun-scene {
+            display: flex;
+        }
+        .homerun-fence-svg {
+            width: 300px;
+            height: auto;
+            opacity: 0.85;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+            transform: translateY(30%);
+        }
+        .theme-baseball .homerun-fence-svg {
+            animation: fenceFlash 3s ease-in-out infinite;
+        }
+        @keyframes fenceFlash {
+            0%, 60% { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
+            65% { filter: drop-shadow(0 4px 25px rgba(255, 215, 0, 0.85)); }
+            80%, 100% { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
+        }
+
+        .homerun-ball {
+            position: absolute;
+            left: 18%;
+            bottom: 12%;
+            width: 18px;
+            height: 18px;
+            z-index: 6;
+            animation: homerunArc 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+        }
+        @keyframes homerunArc {
+            0%   { transform: translate(0, 0) scale(1.2) rotate(0deg); opacity: 1; }
+            50%  { transform: translate(170px, -210px) scale(0.65) rotate(300deg); opacity: 1; }
+            65%  { transform: translate(220px, -230px) scale(0.45) rotate(390deg); opacity: 1; }
+            80%  { transform: translate(270px, -180px) scale(0.3) rotate(460deg); opacity: 0; }
+            100% { transform: translate(270px, -180px) scale(0.3) rotate(460deg); opacity: 0; }
+        }
+
+        /* --- 2. The App Shell --- */
+        #app-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            transform: scale(1.02);
+            opacity: 0;
+            transition: transform 0.9s var(--ease-out-expo), opacity 0.8s var(--ease-out-expo);
+            will-change: transform, opacity;
+        }
+        
+        #app-wrapper.focused {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* --- 3. Iframe Container --- */
+        #tab-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .tab-iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s var(--ease-out-expo);
+        }
+        
+        .tab-iframe.active {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        /* --- 4. Responsive Navbars --- */
+        :root {
+            --spring-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --spring-gentle: cubic-bezier(0.34, 1.56, 0.64, 1.01);
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* MOBILE: Bottom Frosted Tab Bar */
+        #mobile-tabbar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 84px;
+            background: rgba(12, 12, 16, 0.45);
+            backdrop-filter: blur(28px) saturate(200%);
+            -webkit-backdrop-filter: blur(28px) saturate(200%);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            justify-content: space-around;
+            padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 12px)) 14px;
+            z-index: 100;
+            box-shadow: 
+                0 -10px 40px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            box-sizing: border-box;
+        }
+
+        /* Displays Mobile Navbar ONLY on genuine touch mobile devices */
+        body.device-mobile #mobile-tabbar {
+            display: flex !important;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.45);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.25s var(--ease-out-expo);
+            flex: 1;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-icon {
+            font-size: 30px; 
+            transition: transform 0.3s var(--spring-snappy), color 0.25s ease;
+        }
+
+        .mobile-nav-item .active-icon {
+            display: none;
+        }
+
+        .mobile-label {
+            font-size: 0.75rem; 
+            font-weight: 500;
+            margin-top: 5px;
+            letter-spacing: 0.02em;
+            transition: color 0.25s var(--ease-out-expo);
+        }
+
+        .mobile-nav-item:hover {
+            color: rgba(255, 255, 255, 0.75);
+        }
+        
+        .mobile-nav-item:hover .mobile-icon {
+            transform: scale(1.08) translateY(-1px);
+        }
+
+        .mobile-nav-item.active {
+            color: #ffffff;
+        }
+        
+        .mobile-nav-item.active .mobile-icon {
+            display: none;
+        }
+        
+        .mobile-nav-item.active .active-icon {
+            display: block;
+            color: #ffffff;
+            animation: tabBounce 0.4s var(--spring-snappy) forwards;
+        }
+
+        @keyframes tabBounce {
+            0% { transform: scale(0.85); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        /* Floating Submenu */
+        .mobile-submenu {
+            position: absolute;
+            bottom: calc(100% + 14px);
+            left: 50%;
+            transform: translateX(-50%) translateY(16px) scale(0.8);
+            background: rgba(14, 14, 18, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.35s var(--spring-snappy), opacity 0.25s ease;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            z-index: 100;
+            min-width: 140px;
+        }
+
+        .mobile-nav-item[data-target="home"] .mobile-submenu {
+            left: 12px;
+            transform: translateY(16px) scale(0.8);
+        }
+        .mobile-nav-item[data-target="home"].submenu-open .mobile-submenu {
+            transform: translateY(0) scale(1);
+        }
+
+        .mobile-nav-item[data-target="profile"] .mobile-submenu {
+            left: auto;
+            right: 12px;
+            transform: translateY(16px) scale(0.8);
+        }
+        .mobile-nav-item[data-target="profile"].submenu-open .mobile-submenu {
+            transform: translateY(0) scale(1);
+        }
+
+        .mobile-nav-item.submenu-open .mobile-submenu {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        .mobile-nav-item[data-target="home"].submenu-open .mobile-submenu {
+            transform: translateX(0) translateY(0) scale(1);
+        }
+        .mobile-nav-item[data-target="profile"].submenu-open .mobile-submenu {
+            transform: translateX(0) translateY(0) scale(1);
+        }
+
+        .mobile-submenu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .mobile-submenu-item:hover, .mobile-submenu-item:active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+            transform: scale(1.02);
+        }
+
+        .mobile-submenu-item.active {
+            color: var(--brand);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mobile-submenu-item i {
+            font-size: 14px;
+            color: #ffffff;
+        }
+        
+        .mobile-submenu-item.active i {
+            color: var(--brand);
+        }
+
+        /* DESKTOP NAVBAR: Top Premium Floating Glassy Bar */
+        #desktop-navbar {
+            display: none; 
+        }
+
+        /* Force locks Desktop layout strictly for Desktop Devices even when window is shrunk down */
+        body.device-desktop #desktop-navbar {
+            display: flex !important;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 1040px;
+            background: rgba(12, 12, 16, 0.45);
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 10px 24px;
+            z-index: 100;
+            box-shadow: 
+                0 30px 60px rgba(0, 0, 0, 0.7), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.12),
+                inset 0 0 15px rgba(255, 255, 255, 0.01);
+            align-items: center;
+            justify-content: space-between;
+            box-sizing: border-box;
+            transition: all 0.35s var(--ease-out-expo);
+        }
+
+        body.device-desktop #tab-container {
+            padding-top: 88px !important;
+        }
+
+        body.device-desktop #desktop-navbar:hover {
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: 
+                0 30px 70px rgba(0, 0, 0, 0.8), 
+                0 0 20px rgba(255, 255, 255, 0.02),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .desktop-nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .desktop-nav-logo svg {
+            width: 30px;
+            height: 30px;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.15));
+        }
+
+        .desktop-nav-logo svg path {
+            fill: #ffffff;
+        }
+
+        .desktop-nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .desktop-nav-item {
+            position: relative;
+            color: rgba(255, 255, 255, 0.55);
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out-expo);
+        }
+
+        .nav-trigger {
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px; 
+            transition: all 0.25s var(--ease-out-expo);
+        }
+
+        .nav-trigger i:not(.caret-icon) {
+            font-size: 18px;
+            transition: transform 0.3s var(--spring-snappy);
+        }
+
+        .nav-trigger i.active-icon {
+            display: none;
+        }
+
+        .desktop-nav-item:hover .nav-trigger, 
+        .desktop-nav-item.active .nav-trigger {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .desktop-nav-item.active .nav-trigger i:not(.caret-icon):not(.active-icon) {
+            display: none;
+        }
+
+        .desktop-nav-item.active .nav-trigger i.active-icon {
+            display: inline-block;
+            color: #ffffff;
+        }
+
+        .desktop-nav-item:hover .nav-trigger i:not(.caret-icon) {
+            transform: scale(1.1) rotate(-3deg);
+        }
+
+        .caret-icon {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            transition: transform 0.35s var(--spring-snappy);
+        }
+
+        .desktop-nav-item:hover .caret-icon {
+            transform: rotate(180deg) scale(1.1);
+            opacity: 1;
+        }
+
+        .submenu {
+            position: absolute;
+            top: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%) translateY(8px) scale(0.96);
+            background: rgba(14, 14, 18, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 8px;
+            min-width: 190px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.3s var(--spring-gentle), opacity 0.25s ease;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            z-index: 100;
+        }
+
+        .submenu::before {
+            content: '';
+            position: absolute;
+            top: -16px;
+            left: 0;
+            right: 0;
+            height: 18px;
+            background: transparent;
+            z-index: -1;
+        }
+
+        .desktop-nav-item:hover .submenu {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        .submenu a {
+            position: relative;
+            padding: 10px 14px 10px 28px; 
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 450;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            text-align: left;
+            display: block;
+        }
+
+        .submenu a:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.07);
+            transform: translateX(4px);
+        }
+
+        .submenu a.active {
+            color: var(--brand);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        /* --- Atomic Indicators --- */
+        .atomic-indicator {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s var(--ease-out-expo);
+        }
+
+        .submenu a:hover .atomic-indicator,
+        .submenu a.active .atomic-indicator {
+            opacity: 1;
+        }
+
+        .chevron-arrow {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transform: translateX(-6px);
+            transition: transform 0.35s var(--spring-snappy);
+            z-index: 2;
+        }
+
+        .submenu a:hover .chevron-arrow,
+        .submenu a.active .chevron-arrow {
+            transform: translateX(0);
+        }
+
+        .submenu a.active .chevron-arrow {
+            color: var(--brand);
+        }
+
+        .dot-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #ffffff;
+            border-radius: 50%;
+            opacity: 0;
+            box-shadow: 0 0 6px #ffffff;
+        }
+
+        .submenu a:hover .dot-1 { animation: atomicDot1 0.45s var(--spring-snappy) forwards; }
+        .submenu a:hover .dot-2 { animation: atomicDot2 0.45s var(--spring-snappy) forwards; }
+        .submenu a:hover .dot-3 { animation: atomicDot3 0.45s var(--spring-snappy) forwards; }
+
+        @keyframes atomicDot1 {
+            0% { opacity: 1; transform: translate(-14px, -12px) scale(2); }
+            100% { opacity: 0; transform: translate(0, 0) scale(0); }
+        }
+        @keyframes atomicDot2 {
+            0% { opacity: 1; transform: translate(14px, 12px) scale(2); }
+            100% { opacity: 0; transform: translate(0, 0) scale(0); }
+        }
+        @keyframes atomicDot3 {
+            0% { opacity: 1; transform: translate(0, -14px) scale(1.5); }
+            100% { opacity: 0; transform: translate(0, 0) scale(0); }
+        }
+
+        /* --- Ultra-Responsive Desktop Scaling for Narrow Windows --- */
+        @media (max-width: 1024px) {
+            body.device-desktop #desktop-navbar {
+                width: auto;
+                max-width: 95%;
+                padding: 8px 16px;
+                gap: 12px;
+            }
+            body.device-desktop .desktop-nav-logo span {
+                display: none; 
+            }
+            body.device-desktop .nav-trigger span {
+                display: none; 
+            }
+            body.device-desktop .caret-icon {
+                display: none; 
+            }
+            body.device-desktop .nav-trigger {
+                padding: 8px 12px;
+                gap: 0;
+            }
+            body.device-desktop .desktop-nav-menu {
+                gap: 4px;
+            }
+        }
+
+        /* --- 5. Global Glass Discover Spotlight Layer --- */
+        #discover-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 105;
+            padding: 24px;
+            box-sizing: border-box;
+            pointer-events: none; 
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s var(--ease-out-expo), visibility 0.4s var(--ease-out-expo);
+        }
+        
+        #discover-overlay.active {
+            pointer-events: auto; 
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #discover-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(4, 4, 6, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            opacity: 0;
+            transition: opacity 0.4s var(--ease-out-expo);
+            z-index: 95;
+        }
+
+        #discover-overlay.active #discover-backdrop {
+            opacity: 1;
+        }
+
+        #discover-search-panel {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            height: 480px; 
+            background: rgba(12, 12, 16, 0.8);
+            backdrop-filter: blur(36px) saturate(210%);
+            -webkit-backdrop-filter: blur(36px) saturate(210%);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 20px;
+            box-shadow: 
+                0 30px 65px rgba(0, 0, 0, 0.75),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            overflow: hidden;
+            z-index: 106;
+            opacity: 0;
+            transform: scale(0.94) translateY(-20px);
+            transition: transform 0.45s var(--ease-out-expo), opacity 0.35s var(--ease-out-expo);
+            box-sizing: border-box;
+        }
+
+        #discover-overlay.active #discover-search-panel {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        #discover-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        /* --- 6. Glass Cover Engine --- */
+        #cover-engine {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        #cover-backdrop {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-cover);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            opacity: 0;
+            transition: opacity 0.5s var(--ease-out-expo);
+        }
+
+        #cover-container {
+            position: relative;
+            width: 100%;
+            height: 120dvh;
+            background: #08080a;
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            border-top: 1px solid var(--glass-border);
+            box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.85);
+            transform: translateY(100%);
+            transition: transform 0.55s var(--ease-out-expo);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Bottom skirt prevents underlying content peeking */
+            padding-bottom: 25dvh;
+            margin-bottom: -25dvh;
+        }
+
+        .cover-handle-area {
+            width: 100%;
+            height: 32px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.01);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        
+        .cover-handle-pill {
+            width: 44px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 99px;
+            transition: background 0.3s var(--ease-out-expo), transform 0.3s var(--ease-out-expo);
+        }
+        
+        .cover-handle-area:hover .cover-handle-pill {
+            background: rgba(255, 255, 255, 0.45);
+            transform: scaleX(1.1);
+        }
+
+        #cover-iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+        }
+
+        #cover-engine.active { pointer-events: auto; }
+        #cover-engine.active #cover-backdrop { opacity: 1; }
+        #cover-engine.active #cover-container { transform: translateY(0); }
+        
+        /* Premium Scale/Fade for Fullscreen covers instead of physical sliding sheet */
+        #cover-engine.fullscreen #cover-container {
+            height: 100dvh;
+            border-radius: 0;
+            border-top: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+            transform: scale(1.04) translateY(0);
+            opacity: 0;
+            background: transparent;
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #cover-engine.active.fullscreen #cover-container {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+        #cover-engine.fullscreen .cover-handle-area { display: none; }
+
+        /* --- 7. Toast Engine --- */
+        #toast-container {
+            position: fixed;
+            top: env(safe-area-inset-top, 24px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(20, 20, 24, 0.85);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 14px 20px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+            animation: toastIn 0.4s var(--spring-snappy) forwards, toastOut 0.3s var(--ease-in-out) forwards 3s;
+        }
+        .toast i { color: var(--brand); font-size: 1.2rem; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes toastOut {
+            to { opacity: 0; transform: translateY(-20px) scale(0.9); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Cinematic SVG Startup -->
+    <div id="splash-screen">
+        <canvas id="splash-canvas"></canvas>
+        <div class="firework-flash" id="firework-flash"></div>
+
+        <!-- Football Field Goal Scene -->
+        <div class="field-goal-scene">
+            <svg class="goal-post-svg" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="goalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFF176" />
+                        <stop offset="50%" stop-color="#FBC02D" />
+                        <stop offset="100%" stop-color="#F57F17" />
+                    </linearGradient>
+                </defs>
+                <rect x="94" y="60" width="12" height="100" fill="url(#goalGold)"/>
+                <rect x="20" y="50" width="12" height="60" fill="url(#goalGold)"/>
+                <rect x="168" y="50" width="12" height="60" fill="url(#goalGold)"/>
+                <rect x="20" y="50" width="160" height="12" fill="url(#goalGold)"/>
+            </svg>
+            <svg class="field-goal-ball" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="20" cy="20" rx="17" ry="11" fill="#7B4B27"/>
+                <line x1="6" y1="20" x2="34" y2="20" stroke="#F5F0E6" stroke-width="1.6"/>
+                <line x1="16" y1="15" x2="16" y2="25" stroke="#F5F0E6" stroke-width="1.2"/>
+                <line x1="20" y1="14" x2="20" y2="26" stroke="#F5F0E6" stroke-width="1.2"/>
+                <line x1="24" y1="15" x2="24" y2="25" stroke="#F5F0E6" stroke-width="1.2"/>
+            </svg>
+        </div>
+
+        <!-- World Cup Goal Net Scene -->
+        <div class="soccer-goal-scene">
+            <svg class="goal-net-svg" viewBox="0 0 220 130" xmlns="http://www.w3.org/2000/svg">
+                <rect x="16" y="10" width="188" height="90" fill="none" stroke="#FFFFFF" stroke-width="5"/>
+                <g stroke="rgba(255,255,255,0.25)" stroke-width="1">
+                    <line x1="34" y1="10" x2="34" y2="100"/><line x1="52" y1="10" x2="52" y2="100"/>
+                    <line x1="70" y1="10" x2="70" y2="100"/><line x1="88" y1="10" x2="88" y2="100"/>
+                    <line x1="106" y1="10" x2="106" y2="100"/><line x1="124" y1="10" x2="124" y2="100"/>
+                    <line x1="142" y1="10" x2="142" y2="100"/><line x1="160" y1="10" x2="160" y2="100"/>
+                    <line x1="178" y1="10" x2="178" y2="100"/>
+                    <line x1="16" y1="28" x2="204" y2="28"/><line x1="16" y1="46" x2="204" y2="46"/>
+                    <line x1="16" y1="64" x2="204" y2="64"/><line x1="16" y1="82" x2="204" y2="82"/>
+                </g>
+                <rect x="10" y="100" width="200" height="8" fill="#F0F0F0" opacity="0.4"/>
+            </svg>
+            <svg class="soccer-kick-ball" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="15" cy="15" r="14" fill="#FFFFFF"/>
+                <polygon points="15,4 21,9 18,16 12,16 9,9" fill="#111111"/>
+            </svg>
+        </div>
+
+        <!-- Baseball Home Run Scene -->
+        <div class="homerun-scene">
+            <svg class="homerun-fence-svg" viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="28" width="300" height="52" fill="#1B5E20"/>
+                <rect x="0" y="22" width="300" height="8" fill="#FFD700"/>
+            </svg>
+            <svg class="homerun-ball" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="10" cy="10" r="9" fill="#F5F0E6"/>
+                <path d="M 3 6 Q 10 10, 3 14" fill="none" stroke="#C41E3A" stroke-width="1"/>
+                <path d="M 17 6 Q 10 10, 17 14" fill="none" stroke="#C41E3A" stroke-width="1"/>
+            </svg>
+        </div>
+
+        <div class="splash-logo-container" id="splash-logo">
+            <!-- Xmas Santa Hat -->
+            <div class="santa-hat">
+                <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                    <defs>
+                        <linearGradient id="santaRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FF5252" />
+                            <stop offset="100%" stop-color="#C62828" />
+                        </linearGradient>
+                        <linearGradient id="santaWhite" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#FFFFFF" />
+                            <stop offset="100%" stop-color="#ECEFF1" />
+                        </linearGradient>
+                        <filter id="hatShadow" x="-10%" y="-10%" width="120%" height="120%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+                        </filter>
+                    </defs>
+                    <path d="M 25 70 Q 55 10, 90 45 T 115 55 C 110 42, 100 20, 60 20 Q 25 22, 25 70 Z" fill="url(#santaRed)" filter="url(#hatShadow)" />
+                    <circle cx="115" cy="55" r="10" fill="url(#santaWhite)" filter="url(#hatShadow)" />
+                    <path d="M 15 65 C 15 65, 60 55, 105 65 C 105 65, 105 78, 105 78 C 105 78, 60 68, 15 78 Z" fill="url(#santaWhite)" filter="url(#hatShadow)" />
+                </svg>
+            </div>
+            <!-- USA Uncle Sam Hat -->
+            <div class="uncle-sam-hat">
+                <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                    <defs>
+                        <linearGradient id="usBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#2196F3" />
+                            <stop offset="100%" stop-color="#0D47A1" />
+                        </linearGradient>
+                        <linearGradient id="usRed" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#F44336" />
+                            <stop offset="50%" stop-color="#D32F2F" />
+                            <stop offset="100%" stop-color="#B71C1C" />
+                        </linearGradient>
+                        <filter id="usaShadow" x="-10%" y="-10%" width="120%" height="120%">
+                            <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.4"/>
+                        </filter>
+                    </defs>
+                    <rect x="35" y="10" width="50" height="60" fill="url(#usBlue)" filter="url(#usaShadow)"/>
+                    <rect x="35" y="55" width="50" height="15" fill="#1565C0"/>
+                    <g fill="#FFFFFF">
+                        <path d="M 43 62.5 l 1.6 3.4 3.7 0.4 -2.7 2.5 0.8 3.6 -3.4 -1.9 -3.4 1.9 0.8 -3.6 -2.7 -2.5 3.7 -0.4 Z"/>
+                        <path d="M 58 62.5 l 1.6 3.4 3.7 0.4 -2.7 2.5 0.8 3.6 -3.4 -1.9 -3.4 1.9 0.8 -3.6 -2.7 -2.5 3.7 -0.4 Z"/>
+                        <path d="M 73 62.5 l 1.6 3.4 3.7 0.4 -2.7 2.5 0.8 3.6 -3.4 -1.9 -3.4 1.9 0.8 -3.6 -2.7 -2.5 3.7 -0.4 Z"/>
+                    </g>
+                    <path d="M 10 70 C 10 70, 60 62, 110 70 C 112 78, 112 86, 110 92 C 60 84, 10 84, 10 92 C 8 86, 8 78, 10 70 Z" fill="url(#usRed)" filter="url(#usaShadow)"/>
+                    <rect x="10" y="76" width="100" height="4" fill="#FFFFFF"/>
+                </svg>
+            </div>
+            <!-- Spooky Jack-o-Lantern -->
+            <div class="jack-o-lantern">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                    <defs>
+                        <radialGradient id="pumpkinGrad" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+                            <stop offset="0%" stop-color="#FFB74D" />
+                            <stop offset="70%" stop-color="#F57C00" />
+                            <stop offset="100%" stop-color="#E65100" />
+                        </radialGradient>
+                        <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#81C784" />
+                            <stop offset="100%" stop-color="#2E7D32" />
+                        </linearGradient>
+                        <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+                    <path d="M 47 4 Q 53 0, 56 12 Q 48 16, 47 4 Z" fill="url(#stemGrad)"/>
+                    <ellipse cx="50" cy="55" rx="38" ry="34" fill="url(#pumpkinGrad)"/>
+                    <g fill="#FFF59D" filter="url(#glowFilter)">
+                        <polygon points="32,46 42,46 37,58"/>
+                        <polygon points="58,46 68,46 63,58"/>
+                        <path d="M 28 68 Q 50 82, 72 68 Q 62 76, 50 72 Q 38 76, 28 68 Z" fill="#FFEB3B" />
+                    </g>
+                </svg>
+            </div>
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path class="svg-stroke" d="M104.321 172.293L54.1555 172.928C52.264 172.952 51.3995 170.579 52.8629 169.381L142.946 95.5903C143.41 95.2105 143.679 94.6426 143.679 94.0431V90.8091C143.679 90.2785 143.468 89.7696 143.093 89.3945L141.7 88.0024C141.588 87.8901 141.462 87.7916 141.327 87.7089L66.825 42.3214C66.5115 42.1304 66.1515 42.0294 65.7844 42.0294H61.5782C60.9708 42.0294 60.3964 42.3054 60.0168 42.7796L58.1917 45.0599C57.9078 45.4146 57.7531 45.8554 57.7531 46.3097V50.2903C57.7531 50.5071 57.7883 50.7224 57.8575 50.9279L85.2264 132.292C85.4975 133.098 85.2295 133.987 84.5583 134.508L75.0042 141.936C73.9197 142.779 72.3278 142.303 71.884 141.003L42.1073 53.7946C42.0362 53.5866 42 53.3682 42 53.1484V43.0253C42 42.8394 42.0259 42.6544 42.077 42.4756L43.2712 38.2983C43.3762 37.9307 43.5845 37.6009 43.8713 37.348L55.038 27.5C55.4033 27.1778 55.8737 27 56.3609 27H69.3695C69.7335 27 70.0907 27.0994 70.4024 27.2874L152.519 76.8155C152.826 77.0005 153.077 77.2643 153.247 77.5796L157.761 85.9578C157.918 86.2494 158 86.5753 158 86.9064V125.182C158 125.563 157.891 125.935 157.687 126.256L153.164 133.36C153.047 133.544 152.901 133.707 152.732 133.843L105.551 171.851C105.202 172.132 104.769 172.287 104.321 172.293Z"/>
+                <path class="svg-fill" d="M104.321 172.293L54.1555 172.928C52.264 172.952 51.3995 170.579 52.8629 169.381L142.946 95.5903C143.41 95.2105 143.679 94.6426 143.679 94.0431V90.8091C143.679 90.2785 143.468 89.7696 143.093 89.3945L141.7 88.0024C141.588 87.8901 141.462 87.7916 141.327 87.7089L66.825 42.3214C66.5115 42.1304 66.1515 42.0294 65.7844 42.0294H61.5782C60.9708 42.0294 60.3964 42.3054 60.0168 42.7796L58.1917 45.0599C57.9078 45.4146 57.7531 45.8554 57.7531 46.3097V50.2903C57.7531 50.5071 57.7883 50.7224 57.8575 50.9279L85.2264 132.292C85.4975 133.098 85.2295 133.987 84.5583 134.508L75.0042 141.936C73.9197 142.779 72.3278 142.303 71.884 141.003L42.1073 53.7946C42.0362 53.5866 42 53.3682 42 53.1484V43.0253C42 42.8394 42.0259 42.6544 42.077 42.4756L43.2712 38.2983C43.3762 37.9307 43.5845 37.6009 43.8713 37.348L55.038 27.5C55.4033 27.1778 55.8737 27 56.3609 27H69.3695C69.7335 27 70.0907 27.0994 70.4024 27.2874L152.519 76.8155C152.826 77.0005 153.077 77.2643 153.247 77.5796L157.761 85.9578C157.918 86.2494 158 86.5753 158 86.9064V125.182C158 125.563 157.891 125.935 157.687 126.256L153.164 133.36C153.047 133.544 152.901 133.707 152.732 133.843L105.551 171.851C105.202 172.132 104.769 172.287 104.321 172.293Z"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="app-wrapper">
+        <!-- 2. Main Tab Container -->
+        <div id="tab-container"></div>
+
+        <!-- 3. MOBILE: Bottom Frosted Tab Bar -->
+        <nav id="mobile-tabbar">
+            <!-- Home -->
+            <a class="mobile-nav-item active" data-target="home">
+                <div class="mobile-submenu">
+                    <div class="mobile-submenu-item" data-action="main_home">
+                        <i class="ph ph-house-line"></i>
+                        <span>Main Feed</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="movies">
+                        <i class="ph ph-film-strip"></i>
+                        <span>Movies</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="tv_shows">
+                        <i class="ph ph-television"></i>
+                        <span>TV Shows</span>
+                    </div>
+                </div>
+                <i class="ph ph-house mobile-icon"></i>
+                <i class="ph-fill ph-house mobile-icon active-icon"></i>
+                <span class="mobile-label">Home</span>
+            </a>
+
+            <!-- Anime -->
+            <a class="mobile-nav-item" data-target="anime">
+                <div class="mobile-submenu">
+                    <div class="mobile-submenu-item" data-action="main_anime">
+                        <i class="ph ph-sparkles"></i>
+                        <span>Anime Hub</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="manga">
+                        <i class="ph ph-book-open"></i>
+                        <span>Manga</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="release_schedule">
+                        <i class="ph ph-calendar"></i>
+                        <span>Schedule</span>
+                    </div>
+                </div>
+                <i class="ph ph-television-simple mobile-icon"></i>
+                <i class="ph-fill ph-television-simple mobile-icon active-icon"></i>
+                <span class="mobile-label">Anime</span>
+            </a>
+
+            <!-- Discover (Global Spotlight Overlay Trigger) -->
+            <a class="mobile-nav-item" data-target="discover">
+                <i class="ph ph-compass mobile-icon"></i>
+                <i class="ph-fill ph-compass mobile-icon active-icon"></i>
+                <span class="mobile-label">Discover</span>
+            </a>
+
+            <!-- Live -->
+            <a class="mobile-nav-item" data-target="live">
+                <div class="mobile-submenu">
+                    <div class="mobile-submenu-item" data-action="main_live">
+                        <i class="ph ph-play-circle"></i>
+                        <span>Live Hub</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="sports">
+                        <i class="ph ph-trophy"></i>
+                        <span>Sports</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="channels">
+                        <i class="ph ph-broadcast"></i>
+                        <span>Channels</span>
+                    </div>
+                </div>
+                <i class="ph ph-broadcast mobile-icon"></i>
+                <i class="ph-fill ph-broadcast mobile-icon active-icon"></i>
+                <span class="mobile-label">Live</span>
+            </a>
+
+            <!-- Profile -->
+            <a class="mobile-nav-item" data-target="profile">
+                <div class="mobile-submenu">
+                    <div class="mobile-submenu-item" data-action="main_profile">
+                        <i class="ph ph-user-circle"></i>
+                        <span>Profile Hub</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="user_dashboard">
+                        <i class="ph ph-layout"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="mobile-submenu-item" data-action="user_settings">
+                        <i class="ph ph-gear"></i>
+                        <span>Settings</span>
+                    </div>
+                </div>
+                <i class="ph ph-user mobile-icon"></i>
+                <i class="ph-fill ph-user mobile-icon active-icon"></i>
+                <span class="mobile-label">Profile</span>
+            </a>
+        </nav>
+
+        <!-- 4. DESKTOP: Top Premium Floating Glassy Bar -->
+        <nav id="desktop-navbar">
+            <div class="desktop-nav-logo">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M104.321 172.293L54.1555 172.928C52.264 172.952 51.3995 170.579 52.8629 169.381L142.946 95.5903C143.41 95.2105 143.679 94.6426 143.679 94.0431V90.8091C143.679 90.2785 143.468 89.7696 143.093 89.3945L141.7 88.0024C141.588 87.8901 141.462 87.7916 141.327 87.7089L66.825 42.3214C66.5115 42.1304 66.1515 42.0294 65.7844 42.0294H61.5782C60.9708 42.0294 60.3964 42.3054 60.0168 42.7796L58.1917 45.0599C57.9078 45.4146 57.7531 45.8554 57.7531 46.3097V50.2903C57.7531 50.5071 57.7883 50.7224 57.8575 50.9279L85.2264 132.292C85.4975 133.098 85.2295 133.987 84.5583 134.508L75.0042 141.936C73.9197 142.779 72.3278 142.303 71.884 141.003L42.1073 53.7946C42.0362 53.5866 42 53.3682 42 53.1484V43.0253C42 42.8394 42.0259 42.6544 42.077 42.4756L43.2712 38.2983C43.3762 37.9307 43.5845 37.6009 43.8713 37.348L55.038 27.5C55.4033 27.1778 55.8737 27 56.3609 27H69.3695C69.7335 27 70.0907 27.0994 70.4024 27.2874L152.519 76.8155C152.826 77.0005 153.077 77.2643 153.247 77.5796L157.761 85.9578C157.918 86.2494 158 86.5753 158 86.9064V125.182C158 125.563 157.891 125.935 157.687 126.256L153.164 133.36C153.047 133.544 152.901 133.707 152.732 133.843L105.551 171.851C105.202 172.132 104.769 172.287 104.321 172.293Z"/>
+                </svg>
+                <span>Animax</span>
+            </div>
+            <div class="desktop-nav-menu">
+                <div class="desktop-nav-item active" data-target="home">
+                    <div class="nav-trigger">
+                        <i class="ph ph-house"></i>
+                        <i class="ph-fill ph-house active-icon"></i>
+                        <span>Home</span>
+                        <i class="ph ph-caret-down caret-icon"></i>
+                    </div>
+                    <div class="submenu">
+                        <a href="#" data-action="main_home">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Main Feed
+                        </a>
+                        <a href="#" data-action="movies">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Movies
+                        </a>
+                        <a href="#" data-action="tv_shows">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            TV Shows
+                        </a>
+                    </div>
+                </div>
+                <div class="desktop-nav-item" data-target="anime">
+                    <div class="nav-trigger">
+                        <i class="ph ph-television-simple"></i>
+                        <i class="ph-fill ph-television-simple active-icon"></i>
+                        <span>Anime</span>
+                        <i class="ph ph-caret-down caret-icon"></i>
+                    </div>
+                    <div class="submenu">
+                        <a href="#" data-action="main_anime">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Anime Hub
+                        </a>
+                        <a href="#" data-action="manga">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Manga
+                        </a>
+                        <a href="#" data-action="release_schedule">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Release Schedule
+                        </a>
+                    </div>
+                </div>
+                <div class="desktop-nav-item" data-target="discover">
+                    <div class="nav-trigger">
+                        <i class="ph ph-compass"></i>
+                        <i class="ph-fill ph-compass active-icon"></i>
+                        <span>Discover</span>
+                    </div>
+                </div>
+                <div class="desktop-nav-item" data-target="live">
+                    <div class="nav-trigger">
+                        <i class="ph ph-broadcast"></i>
+                        <i class="ph-fill ph-broadcast active-icon"></i>
+                        <span>Live</span>
+                        <i class="ph ph-caret-down caret-icon"></i>
+                    </div>
+                    <div class="submenu">
+                        <a href="#" data-action="main_live">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Live Hub
+                        </a>
+                        <a href="#" data-action="sports">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Sports
+                        </a>
+                        <a href="#" data-action="channels">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Channels
+                        </a>
+                    </div>
+                </div>
+                <div class="desktop-nav-item" data-target="profile">
+                    <div class="nav-trigger">
+                        <i class="ph ph-user"></i>
+                        <i class="ph-fill ph-user active-icon"></i>
+                        <span>Profile</span>
+                        <i class="ph ph-caret-down caret-icon"></i>
+                    </div>
+                    <div class="submenu">
+                        <a href="#" data-action="main_profile">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Profile Hub
+                        </a>
+                        <a href="#" data-action="user_dashboard">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            My Dashboard
+                        </a>
+                        <a href="#" data-action="user_settings">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Account Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- 5. GLOBAL GLASS DISCOVER SEARCH PANEL OVERLAY (High Spotlight Layer) -->
+    <div id="discover-overlay">
+        <div id="discover-backdrop" onclick="AnimaxShell.closeDiscover()"></div>
+        <div id="discover-search-panel">
+            <iframe id="discover-iframe" src="tabs/discover.html"></iframe>
+        </div>
+    </div>
+
+    <!-- 6. Cover Engine -->
+    <div id="cover-engine">
+        <div id="cover-backdrop" onclick="AnimaxShell.closeCover()"></div>
+        <div id="cover-container">
+            <div class="cover-handle-area" onclick="AnimaxShell.closeCover()">
+                <div class="cover-handle-pill"></div>
+            </div>
+            <iframe id="cover-iframe"></iframe>
+        </div>
+    </div>
+
+    <!-- 7. Toast Engine -->
+    <div id="toast-container"></div>
+
+    <script src="js/api.js?v=1.0.1"></script>
+    <script>
+        // Programmatic Device Lock Engine: Prevents window resizes on desktop from breaking styles
+        (function() {
+            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+            if (isMobileDevice) {
+                document.body.classList.add('device-mobile');
+            } else {
+                document.body.classList.add('device-desktop');
+            }
+        })();
+
+        // --- Premium Watch History Synchronization Engine ---
+        const WatchHistoryEngine = (function() {
+            let writeCache = {};
+            let writeTimer = null;
+
+            function flushHistoryToStorage() {
+                if (Object.keys(writeCache).length === 0) return;
+                try {
+                    const rawHistory = localStorage.getItem('animax_watch_history');
+                    let history = rawHistory ? JSON.parse(rawHistory) : {};
+
+                    Object.keys(writeCache).forEach(key => {
+                        history[key] = {
+                            ...history[key],
+                            ...writeCache[key],
+                            updatedAt: Date.now()
+                        };
+                    });
+
+                    localStorage.setItem('animax_watch_history', JSON.stringify(history));
+                    writeCache = {}; // Flush success
+                } catch (e) {
+                    console.error("Local storage sync error:", e);
+                }
+            }
+
+            function pushProgressUpdate(data) {
+                if (!data || !data.id) return;
+                const progressKey = data.season && data.episode 
+                    ? `tv_${data.id}_s${data.season}_e${data.episode}` 
+                    : `movie_${data.id}`;
+
+                writeCache[progressKey] = {
+                    id: data.id,
+                    season: data.season,
+                    episode: data.episode,
+                    timestamp: data.timestamp,
+                    duration: data.duration,
+                    status: data.status
+                };
+
+                // Throttles disk writes to once every 5 seconds to keep rendering performance smooth
+                if (!writeTimer) {
+                    writeTimer = setTimeout(() => {
+                        flushHistoryToStorage();
+                        writeTimer = null;
+                    }, 5000);
+                }
+            }
+
+            // Immediately flush cached items to disk on system hide/unload
+            window.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') flushHistoryToStorage();
+            });
+            window.addEventListener('pagehide', flushHistoryToStorage);
+
+            return { pushProgressUpdate, forceSave: flushHistoryToStorage };
+        })();
+
+        const AnimaxShell = (function() {
+            const tabs = ['home', 'anime', 'live', 'profile'];
+            const iframes = {};
+            let currentTab = 'home';
+            let previousTab = 'home';
+            
+            const appWrapper = document.getElementById('app-wrapper');
+            const tabContainer = document.getElementById('tab-container');
+            const navItems = document.querySelectorAll('.mobile-nav-item, .desktop-nav-item');
+            
+            const coverEngine = document.getElementById('cover-engine');
+            const coverIframe = document.getElementById('cover-iframe');
+            const toastContainer = document.getElementById('toast-container');
+            
+            const splashScreen = document.getElementById('splash-screen');
+            const splashLogo = document.getElementById('splash-logo');
+
+            // --- A. Cinematic Boot Sequence ---
+            function bootApp() {
+                SplashThemeEngine.loadActiveTheme();
+
+                splashLogo.classList.add('animate-draw');
+                preloadTabs();
+
+                setTimeout(() => {
+                    splashLogo.classList.add('glow');
+                    setTimeout(() => {
+                        splashScreen.style.opacity = '0';
+                        splashScreen.style.transform = 'scale(1.08)';
+                        appWrapper.classList.add('focused');
+                        
+                        setTimeout(() => {
+                            splashScreen.style.display = 'none';
+                            SplashThemeEngine.stopEngine();
+                            checkAuthAndRoute();
+                        }, 800);
+                    }, 500); 
+                }, 1800); 
+            }
+
+            function preloadTabs() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const initialMode = urlParams.get('mode');
+                let homeParams = '';
+
+                // Enable deep-linking preloads automatically matching current address bar parameter
+                if (initialMode && ['movies', 'tv', 'manga'].includes(initialMode)) {
+                    homeParams = `?mode=${initialMode}`;
+                }
+
+                tabs.forEach(tab => {
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'tab-iframe';
+                    iframe.id = `iframe-${tab}`;
+                    if (tab === 'home') {
+                        iframe.src = `tabs/${tab}.html${homeParams}`; 
+                        iframe.classList.add('active');
+                    }
+                    tabContainer.appendChild(iframe);
+                    iframes[tab] = iframe;
+                });
+            }
+
+            function checkAuthAndRoute() {
+                const token = window.AnimaxAPI.getToken();
+                if (!token) {
+                    openCover('covers/onboarding.html?mode=auth', true);
+                } else {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const mode = urlParams.get('mode');
+                    if (mode) {
+                        const targetAction = mode === 'tv' ? 'tv_shows' : mode;
+                        triggerSubAction(targetAction);
+                    } else {
+                        if (iframes['home'] && iframes['home'].contentWindow) {
+                            iframes['home'].contentWindow.postMessage({ type: 'TAB_FOCUSED' }, '*');
+                        }
+                    }
+                }
+            }
+
+            // --- B. Global Discover Spotlight Overlay Controls ---
+            function openDiscover(initialQuery) {
+                const overlay = document.getElementById('discover-overlay');
+                if (overlay.classList.contains('active')) {
+                    if (!initialQuery) {
+                        closeDiscover();
+                        return;
+                    }
+                } else {
+                    previousTab = currentTab;
+
+                    document.querySelectorAll('.mobile-nav-item, .desktop-nav-item').forEach(nav => {
+                        if (nav.dataset.target === 'discover') nav.classList.add('active');
+                        else nav.classList.remove('active');
+                    });
+
+                    overlay.classList.add('active');
+                }
+
+                setTimeout(() => {
+                    const iframe = document.getElementById('discover-iframe');
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({ type: 'FOCUS_SEARCH', query: initialQuery || '' }, '*');
+                    }
+                }, 100);
+            }
+
+            function closeDiscover() {
+                const overlay = document.getElementById('discover-overlay');
+                if (!overlay.classList.contains('active')) return;
+                
+                overlay.classList.remove('active');
+                
+                document.querySelectorAll('.mobile-nav-item, .desktop-nav-item').forEach(nav => {
+                    if (nav.dataset.target === previousTab) nav.classList.add('active');
+                    else nav.classList.remove('active');
+                });
+                
+                setTimeout(() => {
+                    const iframe = document.getElementById('discover-iframe');
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({ type: 'CLEAR_SEARCH' }, '*');
+                    }
+                }, 400); 
+            }
+
+            // --- C. Navigation Router Configuration ---
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.submenu, .mobile-submenu')) return;
+
+                    const target = item.dataset.target;
+                    
+                    if (target === 'discover') {
+                        openDiscover();
+                        return;
+                    }
+
+                    if (document.getElementById('discover-overlay').classList.contains('active')) {
+                        closeDiscover();
+                    }
+
+                    if (currentTab === target) {
+                        if (item.classList.contains('mobile-nav-item')) {
+                            // On mobile, if already on the active tab:
+                            if (item.classList.contains('submenu-open')) {
+                                // Tapping it while the submenu is open resets to the root/main view of that tab
+                                switchTab(target, '');
+                                item.classList.remove('submenu-open');
+                            } else {
+                                // Open submenu on first click of already-active tab
+                                item.classList.add('submenu-open');
+                                document.querySelectorAll('.mobile-nav-item').forEach(nav => {
+                                    if (nav !== item) nav.classList.remove('submenu-open');
+                                });
+                            }
+                        } else {
+                            // On desktop, clicking active tab trigger resets to main view
+                            switchTab(target, '');
+                        }
+                        return;
+                    }
+
+                    document.querySelectorAll('.mobile-nav-item').forEach(nav => {
+                        nav.classList.remove('submenu-open');
+                    });
+
+                    if ("vibrate" in navigator) navigator.vibrate(20);
+                    switchTab(target);
+                });
+            });
+
+            function syncAddressBar(action) {
+                const activeTheme = SplashThemeEngine.getThemeName();
+                const params = new URLSearchParams();
+
+                if (activeTheme && activeTheme !== 'default') {
+                    params.set('theme', activeTheme);
+                }
+
+                if (action && !action.startsWith('main_')) {
+                    const activeModeParam = action === 'tv_shows' ? 'tv' : action;
+                    params.set('mode', activeModeParam);
+                }
+
+                const queryString = params.toString();
+                const suffix = queryString ? `?${queryString}` : '';
+                const targetPath = `${window.location.origin}${window.location.pathname}${suffix}`;
+                
+                window.history.pushState({ path: targetPath }, '', targetPath);
+
+                // Update subcategory active state highlights
+                document.querySelectorAll('[data-action]').forEach(el => {
+                    if (el.dataset.action === action) el.classList.add('active');
+                    else el.classList.remove('active');
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.mobile-nav-item') && !e.target.closest('.desktop-nav-item') && !e.target.closest('#discover-search-panel')) {
+                    closeDiscover();
+                }
+                
+                if (!e.target.closest('.mobile-nav-item')) {
+                    document.querySelectorAll('.mobile-nav-item').forEach(nav => {
+                        nav.classList.remove('submenu-open');
+                    });
+                }
+            });
+
+            function switchTab(targetId, queryParams = '') {
+                const targetIframe = iframes[targetId];
+                if (!targetIframe) return;
+
+                const relativeUrl = `tabs/${targetId}.html${queryParams}`;
+
+                if (currentTab === targetId) {
+                    // Force physical view reset/reload of active iframe
+                    if (queryParams === '') {
+                        if (!targetIframe.src.endsWith(`tabs/${targetId}.html`)) {
+                            targetIframe.src = relativeUrl;
+                        } else if (targetIframe.contentWindow) {
+                            targetIframe.contentWindow.location.reload();
+                        }
+                    } else {
+                        targetIframe.src = relativeUrl;
+                    }
+                } else {
+                    // Perform safe tab switch
+                    Object.values(iframes).forEach(ifr => ifr.classList.remove('active'));
+                    
+                    if (!targetIframe.src || queryParams !== '') {
+                        targetIframe.src = relativeUrl;
+                    }
+                    targetIframe.classList.add('active');
+                    currentTab = targetId;
+                }
+
+                // Sync navigation active class visually
+                navItems.forEach(nav => {
+                    if (nav.dataset.target === targetId) {
+                        nav.classList.add('active');
+                    } else {
+                        nav.classList.remove('active');
+                    }
+                });
+
+                // Safely update Address Bar query string
+                const activeAction = queryParams ? queryParams.replace('?mode=', '') : `main_${targetId}`;
+                syncAddressBar(activeAction);
+
+                setTimeout(() => {
+                    if (targetIframe.contentWindow) {
+                        targetIframe.contentWindow.postMessage({ type: 'TAB_FOCUSED' }, '*');
+                    }
+                }, 100);
+            }
+
+            function triggerSubAction(action) {
+                let targetTab = 'home';
+                let queryParam = '';
+                
+                if (action === 'movies') {
+                    targetTab = 'home';
+                    queryParam = '?mode=movies';
+                } else if (action === 'tv_shows') {
+                    targetTab = 'home';
+                    queryParam = '?mode=tv';
+                } else if (action === 'manga') {
+                    targetTab = 'home';
+                    queryParam = '?mode=manga';
+                } else if (action === 'release_schedule') {
+                    targetTab = 'anime';
+                    queryParam = '?mode=schedule';
+                } else if (action === 'sports') {
+                    targetTab = 'live';
+                    queryParam = '?mode=sports';
+                } else if (action === 'channels') {
+                    targetTab = 'live';
+                    queryParam = '?mode=channels';
+                } else if (action === 'user_dashboard') {
+                    targetTab = 'profile';
+                    queryParam = '?mode=dashboard';
+                } else if (action === 'user_settings') {
+                    targetTab = 'profile';
+                    queryParam = '?mode=settings';
+                } else if (action === 'main_home') {
+                    targetTab = 'home';
+                    queryParam = '';
+                } else if (action === 'main_anime') {
+                    targetTab = 'anime';
+                    queryParam = '';
+                } else if (action === 'main_live') {
+                    targetTab = 'live';
+                    queryParam = '';
+                } else if (action === 'main_profile') {
+                    targetTab = 'profile';
+                    queryParam = '';
+                }
+
+                switchTab(targetTab, queryParam);
+                syncAddressBar(action);
+
+                document.querySelectorAll('.mobile-nav-item').forEach(nav => {
+                    nav.classList.remove('submenu-open');
+                });
+
+                setTimeout(() => {
+                    const targetIframe = iframes[targetTab];
+                    if (targetIframe && targetIframe.contentWindow) {
+                        targetIframe.contentWindow.postMessage({ type: 'SUB_ACTION', action }, '*');
+                    }
+                }, 150);
+            }
+
+            // Bind all sub-actions programmatically on content ready state
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('[data-action]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const action = el.dataset.action;
+                        triggerSubAction(action);
+                    });
+                });
+            });
+
+            // --- D. Cover Engine Logic ---
+            function openCover(url, fullscreen = false) {
+                coverIframe.src = url;
+                if (fullscreen) coverEngine.classList.add('fullscreen');
+                else coverEngine.classList.remove('fullscreen');
+                coverEngine.classList.add('active');
+            }
+
+            function closeCover() {
+                coverEngine.classList.remove('active');
+                setTimeout(() => coverIframe.src = '', 550); 
+            }
+
+            // --- E. Toast Engine Logic ---
+            function showToast(message, iconClass = 'ph-info') {
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerHTML = `<i class="ph-fill ${iconClass}"></i> <span>${message}</span>`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
+            }
+
+            // --- F. PostMessage Router ---
+            window.addEventListener('message', (event) => {
+                const { type, url, message, icon, fullscreen, id, action } = event.data;
+                switch (type) {
+                    case 'OPEN_COVER': openCover(url, fullscreen); break;
+                    case 'CLOSE_COVER': closeCover(); break;
+                    case 'SHOW_TOAST': showToast(message, icon); break;
+                    case 'TRIGGER_SUB_ACTION': triggerSubAction(action); break; 
+                    case 'OPEN_DISCOVER': openDiscover(event.data.query); break;
+                    case 'REQUIRE_AUTH': openCover('covers/onboarding.html?mode=auth', true); break;
+                    case 'AUTH_SUCCESS': 
+                        closeCover();
+                        showToast('Welcome to Animax', 'ph-check-circle');
+                        iframes[currentTab].contentWindow.postMessage({ type: 'TAB_FOCUSED' }, '*');
+                        break;
+                    case 'DISCOVER_SELECT':
+                        console.log("Selected Discover ID:", id);
+                        closeDiscover();
+                        openCover(`covers/info.html?id=${id}`, false);
+                        break;
+                    case 'CLOSE_DISCOVER':
+                        closeDiscover();
+                        break;
+                    case 'PLAYBACK_PROGRESS':
+                        // Captures direct streaming events from player.html microservice [1]
+                        WatchHistoryEngine.pushProgressUpdate(event.data);
+                        break;
+                    case 'SWITCH_PROVIDER':
+                        // Signals back down to active visual frame to cycle next CDN endpoint
+                        const currentTabFrame = iframes[currentTab];
+                        if (currentTabFrame && currentTabFrame.contentWindow) {
+                            currentTabFrame.contentWindow.postMessage({ type: 'TRY_NEXT_PROVIDER' }, '*');
+                        }
+                        if (coverIframe && coverIframe.contentWindow) {
+                            coverIframe.contentWindow.postMessage({ type: 'TRY_NEXT_PROVIDER' }, '*');
+                        }
+                        break;
+                }
+            });
+
+            return { bootApp, closeCover, triggerSubAction, openDiscover, closeDiscover, switchTab };
+        })();
+
+        // --- G. Premium Custom Theme & Canvas Particle Engine ---
+        const SplashThemeEngine = (function() {
+            const THEMES_CONFIG = {
+                default: { brand: '#8FE7EC', brandDim: 'rgba(143, 231, 236, 0.15)', cssClass: 'theme-default' },
+                white: { brand: '#FFFFFF', brandDim: 'rgba(255, 255, 255, 0.18)', cssClass: 'theme-white' },
+                xmas: { brand: '#FF2E2E', brandDim: 'rgba(255, 46, 46, 0.18)', cssClass: 'theme-xmas' },
+                sakura: { brand: '#FFB7C5', brandDim: 'rgba(255, 183, 197, 0.18)', cssClass: 'theme-sakura' },
+                cyberpunk: { brand: '#FF2E9A', brandDim: 'rgba(255, 46, 154, 0.18)', cssClass: 'theme-cyberpunk' },
+                vampire: { brand: '#9E0000', brandDim: 'rgba(158, 0, 0, 0.22)', cssClass: 'theme-vampire' },
+                gold: { brand: '#FFD700', brandDim: 'rgba(255, 215, 0, 0.18)', cssClass: 'theme-gold' },
+                spooky: { brand: '#FF7518', brandDim: 'rgba(255, 117, 24, 0.2)', cssClass: 'theme-spooky' },
+                usa: { brand: '#3C6FD9', brandDim: 'rgba(60, 111, 217, 0.18)', cssClass: 'theme-usa' },
+                autumn: { brand: '#D2691E', brandDim: 'rgba(210, 105, 30, 0.18)', cssClass: 'theme-autumn' },
+                baseball: { brand: '#C41E3A', brandDim: 'rgba(196, 30, 58, 0.18)', cssClass: 'theme-baseball' },
+                football: { brand: '#A8752F', brandDim: 'rgba(168, 117, 47, 0.2)', cssClass: 'theme-football' },
+                wc: { brand: '#00A550', brandDim: 'rgba(0, 165, 80, 0.18)', cssClass: 'theme-wc' }
+            };
+
+            let activeTheme = 'default';
+            let canvas, ctx;
+            let animationFrameId = null;
+            let particles = [];
+            let whitePulseScale = 1.0;
+            let whitePulseDir = 0.005;
+            let fireworkBursts = [];
+            let fireworkTimerId = null;
+
+            function logAvailableThemes() {
+                console.log('%c🎨 Available Splash Themes (?theme=<id>)', 'font-weight:bold;font-size:12px;');
+                Object.keys(THEMES_CONFIG).forEach(id => {
+                    console.log(`%c  • ${id}`, `color:${THEMES_CONFIG[id].brand};`);
+                });
+            }
+
+            function loadActiveTheme() {
+                logAvailableThemes();
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const requestedTheme = urlParams.get('theme');
+                
+                if (requestedTheme && THEMES_CONFIG[requestedTheme]) {
+                    activeTheme = requestedTheme;
+                }
+
+                const config = THEMES_CONFIG[activeTheme];
+
+                document.documentElement.style.setProperty('--brand', config.brand);
+                document.documentElement.style.setProperty('--brand-dim', config.brandDim);
+                document.getElementById('splash-screen').className = config.cssClass;
+
+                initCanvasEngine();
+            }
+
+            function initCanvasEngine() {
+                canvas = document.getElementById('splash-canvas');
+                ctx = canvas.getContext('2d');
+
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+
+                const count = (activeTheme === 'default' || activeTheme === 'white') ? 0 : 80;
+                for (let i = 0; i < count; i++) {
+                    particles.push(createParticle());
+                }
+
+                if (activeTheme === 'usa') {
+                    spawnFirework();
+                    fireworkTimerId = setInterval(spawnFirework, 900);
+                }
+
+                runEngineLoop();
+            }
+
+            function spawnFirework() {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                const usaColors = ['#B32234', '#FFFFFF', '#3C6FD9', '#FFD700'];
+                const cx = w * (0.2 + Math.random() * 0.6);
+                const cy = h * (0.15 + Math.random() * 0.35);
+                const color = usaColors[Math.floor(Math.random() * usaColors.length)];
+                const sparkCount = 26;
+                const sparks = [];
+                for (let i = 0; i < sparkCount; i++) {
+                    const angle = (Math.PI * 2 * i) / sparkCount + Math.random() * 0.2;
+                    const speed = Math.random() * 2.2 + 1.6;
+                    sparks.push({
+                        x: cx, y: cy,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        life: 1
+                    });
+                }
+                fireworkBursts.push({ sparks, color, age: 0 });
+
+                const flashEl = document.getElementById('firework-flash');
+                if (flashEl) {
+                    flashEl.style.transition = 'none';
+                    flashEl.style.opacity = '0.9';
+                    requestAnimationFrame(() => {
+                        flashEl.style.transition = 'opacity 0.6s ease-out';
+                        flashEl.style.opacity = '0';
+                    });
+                }
+            }
+
+            function updateAndDrawFireworks() {
+                for (let b = fireworkBursts.length - 1; b >= 0; b--) {
+                    const burst = fireworkBursts[b];
+                    burst.age++;
+                    let allDead = true;
+                    burst.sparks.forEach(s => {
+                        if (s.life <= 0) return;
+                        s.x += s.vx;
+                        s.y += s.vy;
+                        s.vy += 0.035; // gravity
+                        s.life -= 0.018;
+                        if (s.life > 0) {
+                            allDead = false;
+                            ctx.save();
+                            ctx.globalAlpha = Math.max(s.life, 0);
+                            ctx.fillStyle = burst.color;
+                            ctx.shadowColor = burst.color;
+                            ctx.shadowBlur = 6;
+                            ctx.beginPath();
+                            ctx.arc(s.x, s.y, 1.8, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                    });
+                    if (allDead) {
+                        fireworkBursts.splice(b, 1);
+                    }
+                }
+            }
+
+            function resizeCanvas() {
+                if (canvas) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+            }
+
+            function createParticle() {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                
+                const base = {
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: Math.random() * 2 + 1,
+                    speedY: Math.random() * 1.2 + 0.4,
+                    speedX: (Math.random() - 0.5) * 0.5,
+                    opacity: Math.random() * 0.5 + 0.3,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.02,
+                    swayOffset: Math.random() * 100,
+                    swaySpeed: Math.random() * 0.02 + 0.005
+                };
+
+                if (activeTheme === 'gold') {
+                    base.speedY = -(Math.random() * 1.4 + 0.5); 
+                    base.size = Math.random() * 2.5 + 1.2;
+                } else if (activeTheme === 'cyberpunk') {
+                    base.speedX = Math.random() * 3 + 1.5; 
+                    base.speedY = 0;
+                    base.size = Math.random() * 1.5 + 1;
+                    base.y = Math.floor(Math.random() * h / 4) * 4; 
+                } else if (activeTheme === 'vampire') {
+                    base.speedY = Math.random() * 2.2 + 0.8; 
+                    base.size = Math.random() * 2 + 1.5;
+                } else if (activeTheme === 'spooky') {
+                    base.speedY = Math.random() * 0.6 + 0.3;
+                    base.speedX = (Math.random() - 0.5) * 1.2;
+                    base.size = Math.random() * 3 + 2.5;
+                    base.flapOffset = Math.random() * Math.PI * 2;
+                } else if (activeTheme === 'usa') {
+                    base.speedY = -(Math.random() * 1.8 + 0.6);
+                    base.size = Math.random() * 2 + 1;
+                    base.colorPick = Math.floor(Math.random() * 3);
+                } else if (activeTheme === 'autumn') {
+                    base.speedY = Math.random() * 1 + 0.4;
+                    base.size = Math.random() * 2.5 + 1.5;
+                } else if (activeTheme === 'baseball') {
+                    base.speedX = Math.random() * 2.5 + 1.2;
+                    base.arcPhase = Math.random() * Math.PI * 2;
+                    base.size = Math.random() * 1.5 + 2.5;
+                } else if (activeTheme === 'football') {
+                    base.speedX = Math.random() * 2.2 + 1;
+                    base.size = Math.random() * 1.5 + 2.8;
+                    base.rotationSpeed = (Math.random() - 0.5) * 0.15;
+                } else if (activeTheme === 'wc') {
+                    base.speedY = Math.random() * 1 + 0.5;
+                    base.speedX = (Math.random() - 0.5) * 0.8;
+                    base.size = Math.random() * 1.5 + 2.5;
+                }
+
+                return base;
+            }
+
+            function updateParticle(p) {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+
+                p.rotation += p.rotationSpeed;
+
+                if (activeTheme === 'xmas' || activeTheme === 'sakura') {
+                    p.y += p.speedY;
+                    p.x += p.speedX + Math.sin(p.y * p.swaySpeed + p.swayOffset) * 0.35;
+                    
+                    if (p.y > h) { p.y = -10; p.x = Math.random() * w; }
+                    if (p.x > w) p.x = 0;
+                    else if (p.x < 0) p.x = w;
+                } else if (activeTheme === 'gold') {
+                    p.y += p.speedY;
+                    p.x += p.speedX + Math.sin(p.y * 0.01) * 0.2;
+                    if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+                } else if (activeTheme === 'cyberpunk') {
+                    p.x += p.speedX;
+                    if (p.x > w) { p.x = -50; p.y = Math.floor(Math.random() * h / 4) * 4; }
+                } else if (activeTheme === 'vampire') {
+                    p.y += p.speedY;
+                    if (p.y > h) { p.y = -20; p.x = Math.random() * w; }
+                } else if (activeTheme === 'spooky') {
+                    p.y += p.speedY;
+                    p.x += p.speedX + Math.sin(p.y * 0.03 + p.flapOffset) * 0.9;
+                    if (p.y > h) { p.y = -10; p.x = Math.random() * w; }
+                    if (p.x > w) p.x = 0; else if (p.x < 0) p.x = w;
+                } else if (activeTheme === 'usa') {
+                    p.y += p.speedY;
+                    p.x += Math.sin(p.y * 0.05) * 0.6;
+                    if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+                } else if (activeTheme === 'autumn') {
+                    p.y += p.speedY;
+                    p.x += Math.sin(p.y * p.swaySpeed + p.swayOffset) * 0.5;
+                    if (p.y > h) { p.y = -10; p.x = Math.random() * w; }
+                } else if (activeTheme === 'baseball') {
+                    p.x += p.speedX;
+                    p.y += Math.sin(p.x * 0.015 + p.arcPhase) * 1.3;
+                    if (p.x > w) { p.x = -30; p.y = Math.random() * h; }
+                } else if (activeTheme === 'football') {
+                    p.x += p.speedX;
+                    if (p.x > w) { p.x = -40; p.y = Math.random() * h; }
+                } else if (activeTheme === 'wc') {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    if (p.y > h) { p.y = -10; p.x = Math.random() * w; }
+                    if (p.x > w) p.x = 0; else if (p.x < 0) p.x = w;
+                }
+            }
+
+            function drawParticle(p) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                
+                if (activeTheme === 'xmas') {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (activeTheme === 'sakura') {
+                    ctx.fillStyle = `rgba(255, 183, 197, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(-p.size * 2, -p.size, -p.size, p.size * 2, 0, p.size * 3);
+                    ctx.bezierCurveTo(p.size, p.size * 2, p.size * 2, -p.size, 0, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (activeTheme === 'gold') {
+                    ctx.fillStyle = `rgba(255, 215, 0, ${p.opacity})`;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    for (let j = 0; j < 4; j++) {
+                        ctx.lineTo(0, -p.size * 1.6);
+                        ctx.rotate(Math.PI / 2);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (activeTheme === 'cyberpunk') {
+                    const color = Math.random() > 0.5 ? 'rgba(255, 46, 154, 0.45)' : 'rgba(0, 230, 255, 0.45)';
+                    ctx.fillStyle = color;
+                    ctx.fillRect(0, 0, p.size * 15, p.size);
+                } else if (activeTheme === 'vampire') {
+                    ctx.fillStyle = `rgba(158, 0, 0, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -p.size * 1.5);
+                    ctx.quadraticCurveTo(-p.size * 0.7, p.size, 0, p.size * 1.5);
+                    ctx.quadraticCurveTo(p.size * 0.7, p.size, 0, -p.size * 1.5);
+                    ctx.fill();
+                } else if (activeTheme === 'spooky') {
+                    const spookyColor = Math.random() > 0.5 ? `rgba(255, 117, 24, ${p.opacity})` : `rgba(122, 46, 191, ${p.opacity})`;
+                    ctx.fillStyle = spookyColor;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.quadraticCurveTo(-p.size * 2, -p.size * 1.2, -p.size * 3, 0.2);
+                    ctx.quadraticCurveTo(-p.size, p.size * 0.4, 0, 0);
+                    ctx.quadraticCurveTo(p.size, p.size * 0.4, p.size * 3, 0.2);
+                    ctx.quadraticCurveTo(p.size * 2, -p.size * 1.2, 0, 0);
+                    ctx.fill();
+                } else if (activeTheme === 'usa') {
+                    const usaPalette = [
+                        `rgba(179, 34, 52, ${p.opacity})`,
+                        `rgba(255, 255, 255, ${p.opacity})`,
+                        `rgba(60, 111, 217, ${p.opacity})`
+                    ];
+                    ctx.fillStyle = usaPalette[p.colorPick];
+                    ctx.beginPath();
+                    for (let j = 0; j < 5; j++) {
+                        ctx.lineTo(0, -p.size * 1.4);
+                        ctx.rotate(Math.PI * 2 / 5);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (activeTheme === 'autumn') {
+                    ctx.fillStyle = `rgba(210, 105, 30, ${p.opacity})`;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -p.size * 1.5);
+                    ctx.bezierCurveTo(p.size * 1.5, -p.size, p.size * 1.5, p.size, 0, p.size * 1.5);
+                    ctx.bezierCurveTo(-p.size * 1.5, p.size, -p.size * 1.5, -p.size, 0, -p.size * 1.5);
+                    ctx.fill();
+                } else if (activeTheme === 'baseball') {
+                    ctx.fillStyle = '#F5F0E6';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#C41E3A';
+                    ctx.lineWidth = 0.6;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size * 0.65, 0.4, 2.4);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size * 0.65, Math.PI + 0.4, Math.PI + 2.4);
+                    ctx.stroke();
+                } else if (activeTheme === 'football') {
+                    ctx.fillStyle = '#7B4B27';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, p.size * 1.6, p.size * 0.9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#F5F0E6';
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-p.size * 0.7, 0);
+                    ctx.lineTo(p.size * 0.7, 0);
+                    ctx.stroke();
+                } else if (activeTheme === 'wc') {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#111111';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -p.size * 0.55);
+                    ctx.lineTo(p.size * 0.45, -0.1);
+                    ctx.lineTo(-p.size * 0.45, -0.1);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+
+            // Runs the premium animation background loop inside the element
+            function runEngineLoop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const w = canvas.width;
+                const h = canvas.height;
+
+                if (activeTheme === 'white') {
+                    whitePulseScale += whitePulseDir;
+                    if (whitePulseScale > 1.15 || whitePulseScale < 0.95) {
+                        whitePulseDir = -whitePulseDir;
+                    }
+                    
+                    const radGlow = ctx.createRadialGradient(w/2, h/2, 10, w/2, h/2, 180 * whitePulseScale);
+                    radGlow.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+                    radGlow.addColorStop(1, 'rgba(5, 5, 5, 0)');
+                    ctx.fillStyle = radGlow;
+                    ctx.fillRect(0, 0, w, h);
+                } else if (activeTheme === 'default') {
+                    const radGlow = ctx.createRadialGradient(w/2, h/2, 10, w/2, h/2, 220);
+                    radGlow.addColorStop(0, 'rgba(143, 231, 236, 0.04)');
+                    radGlow.addColorStop(1, 'rgba(5, 5, 5, 0)');
+                    ctx.fillStyle = radGlow;
+                    ctx.fillRect(0, 0, w, h);
+                }
+
+                particles.forEach(p => {
+                    updateParticle(p);
+                    drawParticle(p);
+                });
+
+                if (activeTheme === 'usa') {
+                    updateAndDrawFireworks();
+                }
+
+                animationFrameId = requestAnimationFrame(runEngineLoop);
+            }
+
+            function stopEngine() {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                if (fireworkTimerId) {
+                    clearInterval(fireworkTimerId);
+                }
+                window.removeEventListener('resize', resizeCanvas);
+            }
+
+            return { loadActiveTheme, stopEngine, getThemeName: () => activeTheme };
+        })();
+
+        window.onload = AnimaxShell.bootApp;
+    </script>
+</body>
+</html>

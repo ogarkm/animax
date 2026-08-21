@@ -1,0 +1,56 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import event
+from .config import settings
+
+# --- WAL Mode Injector ---
+# This ensures SQLite doesn't lock up during simultaneous reads/writes
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+# --- Engines ---
+# connect_args={"check_same_thread": False} is required for FastAPI + SQLite
+users_engine = create_engine(settings.USERS_DB_URL, connect_args={"check_same_thread": False})
+mapping_engine = create_engine(settings.MAPPING_DB_URL, connect_args={"check_same_thread": False})
+cache_engine = create_engine(settings.CACHE_DB_URL, connect_args={"check_same_thread": False})
+
+# Attach WAL pragmas
+event.listen(users_engine, 'connect', set_sqlite_pragma)
+event.listen(mapping_engine, 'connect', set_sqlite_pragma)
+event.listen(cache_engine, 'connect', set_sqlite_pragma)
+
+# --- Session Makers ---
+UsersSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=users_engine)
+MappingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=mapping_engine)
+CacheSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=cache_engine)
+
+# --- Base Models ---
+UsersBase = declarative_base()
+MappingBase = declarative_base()
+CacheBase = declarative_base()
+
+# --- Dependency Injections (For FastAPI Routes) ---
+def get_users_db():
+    db = UsersSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_mapping_db():
+    db = MappingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_cache_db():
+    db = CacheSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

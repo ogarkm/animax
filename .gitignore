@@ -1,0 +1,15 @@
+# Environments
+.env
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Databases (We only want the folder structure, not the data)
+app/databases/*.db
+app/databases/*.db-shm
+app/databases/*.db-wal
+!app/databases/.gitkeep

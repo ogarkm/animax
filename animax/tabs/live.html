@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Animax - Live Feed Operations</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* --- 1. Base Diagnostics Override --- */
+        body {
+            background-color: #08080a;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+            margin: 0;
+            padding: 30px 8% 120px 8%;
+            box-sizing: border-box;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Monospace rules for engineering telemetry data */
+        .telemetry-font {
+            font-family: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* --- 2. Machined Internal Navigation Bar --- */
+        .live-routing-bar {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 32px;
+            margin-top: 80px;
+            padding-bottom: 1px;
+        }
+
+        .routing-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: none;
+            color: rgba(255, 255, 255, 0.4);
+            padding: 10px 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 3px 3px 0 0;
+            transition: all 0.2s ease;
+            margin-bottom: -1px;
+        }
+
+        .routing-tab:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .routing-tab.active {
+            color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.05);
+            background: #08080a;
+            box-shadow: inset 0 2px 0 #ffffff;
+        }
+
+        /* --- 3. Clinical View Shell Layers --- */
+        .live-view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .live-view.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Grid lines decoration system (Minimal diagnostic feel) */
+        .view-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+            margin-bottom: 24px;
+        }
+
+        .view-section-title {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 600;
+        }
+
+        /* --- 4. VIEW A: LIVE HUB GRID --- */
+        .hub-diagnostic-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .hub-diagnostic-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .primary-monitor-panel {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.01);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .primary-monitor-screen {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect ratio */
+            background: #000;
+            overflow: hidden;
+        }
+
+        .primary-monitor-screen img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) opacity(0.5);
+            transition: all 0.4s ease;
+        }
+
+        .primary-monitor-panel:hover .primary-monitor-screen img {
+            filter: grayscale(100%) opacity(0.8);
+            transform: scale(1.02);
+        }
+
+        .monitor-overlay-telemetry {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: rgba(8, 8, 10, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 2px;
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pulse-dot {
+            width: 4px;
+            height: 4px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ffffff;
+            animation: technicalPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes technicalPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+
+        .monitor-play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(8, 8, 10, 0.9);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .primary-monitor-panel:hover .monitor-play-btn {
+            background: #ffffff;
+            color: #08080a;
+            border-color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        .primary-monitor-data {
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .primary-monitor-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .primary-monitor-subtext {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Side Aux Monitoring List */
+        .aux-feed-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .aux-card {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.01);
+            cursor: pointer;
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .aux-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .aux-thumb {
+            width: 80px;
+            height: 45px;
+            background: #000;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .aux-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) opacity(0.4);
+        }
+
+        .aux-meta {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .aux-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .aux-streaminfo {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* --- 5. VIEW B: SPORTS MATCH SHEET --- */
+        .sports-filter-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .filter-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+            padding: 6px 14px;
+            font-size: 0.65rem;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            color: rgba(255, 255, 255, 0.85);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .filter-btn.active {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .sports-sheet {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .sheet-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 150px;
+            background: #08080a;
+            padding: 16px;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        @media (max-width: 768px) {
+            .sheet-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
+        .sheet-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .sheet-status-col {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .sheet-match-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sheet-match-teams {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.01em;
+        }
+
+        .sheet-match-sub {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .sheet-telemetry-col {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .sheet-telemetry-col {
+                align-items: flex-start;
+            }
+        }
+
+        .sheet-telemetry-rate {
+            color: var(--brand);
+            font-weight: 600;
+        }
+
+        /* --- 6. VIEW C: STATION CHANNELS GRID --- */
+        .station-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .station-block {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 3px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .station-block:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .station-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .station-id {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .station-signal-badge {
+            font-size: 0.55rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1px 5px;
+            border-radius: 2px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .station-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .station-program {
+            border-top: 1px dashed rgba(255, 255, 255, 0.05);
+            padding-top: 8px;
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .program-now {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* --- 7. Fallback Loading States --- */
+        .live-loading-shim {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .shimmer-text {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.35);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Machined View Router Bar -->
+    <div class="live-routing-bar telemetry-font">
+        <button class="routing-tab active" data-view="hub" onclick="LiveController.switchLocalView('hub')">HUB</button>
+        <button class="routing-tab" data-view="sports" onclick="LiveController.switchLocalView('sports')">SPORTS</button>
+        <button class="routing-tab" data-view="channels" onclick="LiveController.switchLocalView('channels')">CHANNELS</button>
+    </div>
+
+    <!-- 2. VIEW: HUB -->
+    <div id="view-hub" class="live-view active">
+        <div class="view-section-header">
+            <div class="view-section-title telemetry-font">LIVE FEED</div>
+            <div class="station-id telemetry-font">CORE BROADCASTS</div>
+        </div>
+        
+        <div class="hub-diagnostic-grid">
+            <div class="primary-monitor-panel" id="primary-monitor">
+                <div class="primary-monitor-screen">
+                    <img id="primary-monitor-img" src="" alt="Live Stream Monitor">
+                    <div class="monitor-overlay-telemetry telemetry-font">
+                        <span class="status-pulse-dot"></span> CORE FEED ACTIVE
+                    </div>
+                    <div class="monitor-play-btn">
+                        <i class="ph-fill ph-play"></i>
+                    </div>
+                </div>
+                <div class="primary-monitor-data">
+                    <div class="primary-monitor-title" id="primary-monitor-title">Connecting Stream Engine...</div>
+                    <div class="primary-monitor-subtext telemetry-font" id="primary-monitor-meta">T-MINUS --:--</div>
+                </div>
+            </div>
+
+            <div class="aux-feed-panel" id="aux-feeds-list">
+                <!-- Aux streams dynamically filled -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. VIEW: SPORTS Match Table -->
+    <div id="view-sports" class="live-view">
+        <div class="sports-filter-row telemetry-font" id="sports-filter-bar">
+            <button class="filter-btn active" onclick="LiveController.filterSports('all')">ALL</button>
+            <button class="filter-btn" onclick="LiveController.filterSports('football')">FOOTBALL</button>
+            <button class="filter-btn" onclick="LiveController.filterSports('basketball')">BASKETBALL</button>
+            <button class="filter-btn" onclick="LiveController.filterSports('tennis')">TENNIS</button>
+            <button class="filter-btn" onclick="LiveController.filterSports('motorsport')">MOTORSPORT</button>
+
+            <button class="filter-btn" onclick="LiveController.filterSports('soccer')">SOCCER</button>
+        </div>
+
+        <div class="sports-sheet" id="sports-container">
+            <div class="live-loading-shim"><span class="shimmer-text telemetry-font">SCANNING SATELLITE CHANNELS...</span></div>
+        </div>
+    </div>
+
+    <!-- 4. VIEW: CHANNELS IPTV Directory Grid -->
+    <div id="view-channels" class="live-view">
+        <div class="view-section-header">
+            <div class="view-section-title telemetry-font">STATION FEEDS DIRECTORY</div>
+            <div class="station-id telemetry-font" id="channels-count-label">0 CHANNELS RESOLVED</div>
+        </div>
+
+        <div class="station-grid" id="channels-container">
+            <div class="live-loading-shim"><span class="shimmer-text telemetry-font">DECRYPTING PACKED DIRECTORY...</span></div>
+        </div>
+    </div>
+
+    <script src="../js/api.js?v=1.0.1"></script>
+    <script>
+        // --- High-Quality Clinical Fallback Database (If microservices are local-only or offline) ---
+        const FALLBACK_LIVE_DB = {
+            sports: [
+                {
+                    id: "sp_01",
+                    sport: "football",
+                    name: "Liverpool vs Real Madrid",
+                    league: "UEFA Champions League",
+                    score: "2 - 1",
+                    status: "LIVE",
+                    time: "64' Min",
+                    banner: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=80",
+                    stream_url: "https://allrounder-live8.pages.dev"
+                },
+                {
+                    id: "sp_02",
+                    sport: "basketball",
+                    name: "LA Lakers vs Boston Celtics",
+                    league: "NBA Live Match",
+                    score: "98 - 94",
+                    status: "LIVE",
+                    time: "4th Quarter",
+                    banner: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80",
+                    stream_url: "https://cls99.pages.dev"
+                },
+                {
+                    id: "sp_03",
+                    sport: "motorsport",
+                    name: "Monaco Grand Prix - Practice 2",
+                    league: "Formula 1 Racing",
+                    score: "GAP 0.042s",
+                    status: "LIVE",
+                    time: "Track Green",
+                    banner: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80",
+                    stream_url: "https://cdnlivetv.tv"
+                },
+                {
+                    id: "sp_04",
+                    sport: "tennis",
+                    name: "Carlos Alcaraz vs Jannik Sinner",
+                    league: "Wimbledon Championship",
+                    score: "3-6, 6-4, 5-4",
+                    status: "LIVE",
+                    time: "Set 3",
+                    banner: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800&q=80",
+                    stream_url: "https://playit99.pages.dev"
+                }
+            ],
+            channels: [
+                { id: "ch_01", code: "ST.001", name: "ABC Network", category: "Entertainment", program: "General Live Feed Broadcast", stream_url: "https://cdnlivetv.tv/api/v1/channels/player/?code=abc&name=abc" },
+                { id: "ch_02", code: "ST.002", name: "Sky News HD", category: "News", program: "Global Report & Technical Live Wire", stream_url: "https://cdnlivetv.tv/api/v1/channels/player/?code=sky-news&name=sky-news" },
+                { id: "ch_03", code: "ST.003", name: "ESPN Premium", category: "Sports", program: "Studio Special Analytics Lineup", stream_url: "https://cdnlivetv.tv/api/v1/channels/player/?code=espn&name=espn" },
+                { id: "ch_04", code: "ST.004", name: "ACC Network", category: "Sports", program: "College Event Diagnostics Live", stream_url: "https://cdnlivetv.tv/api/v1/channels/player/?code=acc&name=acc" },
+                { id: "ch_05", code: "ST.005", name: "BBC One HD", category: "Entertainment", program: "Documentary Loop & Live Coverage", stream_url: "https://cdnlivetv.tv/api/v1/channels/player/?code=bbc-one&name=bbc-one" },
+                { id: "ch_06", code: "ST.006", name: "Eurosport 1", category: "Sports", program: "Cycling Event Stream Coverage", stream_url: "https://cdnlivetv.tv/api/v1/channels/player/?code=eurosport&name=eurosport" }
+            ]
+        };
+
+        const LiveController = (function() {
+            let activeSubView = 'hub';
+            let activeSportFilter = 'all';
+            let streamsCache = [];
+            let sportsCache = [];
+
+            function switchLocalView(viewKey) {
+                activeSubView = viewKey;
+
+                // Sync navigation tabs
+                document.querySelectorAll('.routing-tab').forEach(tab => {
+                    if (tab.dataset.view === viewKey) tab.classList.add('active');
+                    else tab.classList.remove('active');
+                });
+
+                // Toggle visibility
+                document.querySelectorAll('.live-view').forEach(view => {
+                    if (view.id === `view-${viewKey}`) {
+                        view.classList.add('active');
+                    } else {
+                        view.classList.remove('active');
+                    }
+                });
+
+                if (viewKey === 'sports') loadSportsData();
+                if (viewKey === 'channels') loadChannelsData();
+            }
+
+            // Fetches channels via direct proxy configuration fallback
+            async function loadChannelsData() {
+                const container = document.getElementById('channels-container');
+                try {
+                    let data = null;
+                    if (window.AnimaxAPI && typeof window.AnimaxAPI.get === 'function') {
+                        data = await window.AnimaxAPI.get('/streams');
+                    } else {
+                        const response = await fetch('/streams');
+                        if (response.ok) data = await response.json();
+                    }
+
+                    if (data && data.streams) {
+                        streamsCache = data.streams;
+                    } else if (Array.isArray(data)) {
+                        streamsCache = data;
+                    } else {
+                        throw new Error("Local diagnostics inactive");
+                    }
+                } catch (e) {
+                    streamsCache = FALLBACK_LIVE_DB.channels;
+                }
+
+                renderChannels();
+            }
+
+            // Fetches sports directory dynamically
+            async function loadSportsData() {
+                const container = document.getElementById('sports-container');
+                try {
+                    let data = null;
+                    if (window.AnimaxAPI && typeof window.AnimaxAPI.get === 'function') {
+                        data = await window.AnimaxAPI.get('/sports/matches/live');
+                    } else {
+                        const response = await fetch('/sports/matches/live');
+                        if (response.ok) data = await response.json();
+                    }
+
+                    if (Array.isArray(data) && data.length > 0) {
+                        sportsCache = data;
+                    } else {
+                        throw new Error("Zero matches reported by local microservice");
+                    }
+                } catch (e) {
+                    sportsCache = FALLBACK_LIVE_DB.sports;
+                }
+
+                renderSports();
+            }
+
+            function renderChannels() {
+                const container = document.getElementById('channels-container');
+                const counter = document.getElementById('channels-count-label');
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                if (!streamsCache || streamsCache.length === 0) {
+                    container.innerHTML = `<div class="live-loading-shim"><span class="shimmer-text telemetry-font">NO FEEDS ROUTED</span></div>`;
+                    if (counter) counter.innerText = "000 CHANNELS RESOLVED";
+                    return;
+                }
+
+                streamsCache.forEach((ch, index) => {
+                    const block = document.createElement('div');
+                    block.className = 'station-block';
+                    
+                    const feedCode = ch.code || `ST.${String(index + 1).padStart(3, '0')}`;
+                    const currentProgram = ch.program || "SATELLITE SYNDICATION BROADCAST";
+                    const category = ch.category || "General";
+
+                    block.onclick = () => triggerLivePlayer(ch.stream_url || ch.url, ch.name);
+
+                    block.innerHTML = `
+                        <div class="station-header-row telemetry-font">
+                            <span class="station-id">${feedCode}</span>
+                            <span class="station-signal-badge">${category}</span>
+                        </div>
+                        <div class="station-name">${ch.name}</div>
+                        <div class="station-program telemetry-font">
+                            <span style="font-size:0.55rem; color: rgba(255,255,255,0.2)">CURRENTLY PIPING</span>
+                            <span class="program-now">${currentProgram}</span>
+                        </div>
+                    `;
+                    container.appendChild(block);
+                });
+
+                if (counter) counter.innerText = `${String(streamsCache.length).padStart(3, '0')} CHANNELS RESOLVED`;
+            }
+
+            function renderSports() {
+                const container = document.getElementById('sports-container');
+                if (!container) return;
+                container.innerHTML = '';
+
+                const filtered = sportsCache.filter(match => {
+                    if (activeSportFilter === 'all') return true;
+                    return match.sport.toLowerCase() === activeSportFilter;
+                });
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `<div class="live-loading-shim"><span class="shimmer-text telemetry-font">NO ACTIVE FEEDS MATCH FILTER</span></div>`;
+                    return;
+                }
+
+                filtered.forEach(match => {
+                    const row = document.createElement('div');
+                    row.className = 'sheet-row';
+                    
+                    // Match streaming target selection: either directly play first stream or default
+                    const targetUrl = (match.streams && match.streams.length > 0) ? match.streams[0].url : match.stream_url;
+                    row.onclick = () => triggerLivePlayer(targetUrl, match.name || match.title);
+
+                    const score = match.score || "VS";
+                    const time = match.time || match.minute || "SCHED";
+                    const isLive = match.status === "LIVE" || match.is_live;
+
+                    row.innerHTML = `
+                        <div class="sheet-status-col telemetry-font">
+                            <span class="status-pulse-dot" style="${isLive ? '' : 'background:rgba(255,255,255,0.25); box-shadow:none;'}"></span>
+                            <span>${isLive ? 'LIVE FEED' : 'STBY'}</span>
+                        </div>
+                        <div class="sheet-match-col">
+                            <div class="sheet-match-teams">${match.name || match.title}</div>
+                            <div class="sheet-match-sub telemetry-font">${match.league || 'Intl Event'}</div>
+                        </div>
+                        <div class="sheet-telemetry-col telemetry-font">
+                            <span class="sheet-telemetry-rate">${score}</span>
+                            <span>${time}</span>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            function filterSports(sportKey) {
+                activeSportFilter = sportKey;
+                document.querySelectorAll('#sports-filter-bar .filter-btn').forEach(btn => {
+                    if (btn.innerText.toLowerCase() === sportKey) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+                renderSports();
+            }
+
+            // Formulate primary layout indicators in Main Hub monitor
+            function populateHubMonitor() {
+                const primary = sportsCache.length > 0 ? sportsCache[0] : FALLBACK_LIVE_DB.sports[0]; 
+                
+                const monitorImg = document.getElementById('primary-monitor-img');
+                const monitorTitle = document.getElementById('primary-monitor-title');
+                const monitorMeta = document.getElementById('primary-monitor-meta');
+                const monitorEl = document.getElementById('primary-monitor');
+
+                if (monitorImg) monitorImg.src = primary.poster || primary.banner;
+                if (monitorTitle) monitorTitle.innerText = primary.name || primary.title;
+                if (monitorMeta) monitorMeta.innerText = `${primary.league} — ${primary.time || primary.minute || 'LIVE'}`;
+                
+                const targetUrl = (primary.streams && primary.streams.length > 0) ? primary.streams[0].url : primary.stream_url;
+                if (monitorEl) monitorEl.onclick = () => triggerLivePlayer(targetUrl, primary.name || primary.title);
+
+                // Build secondary list
+                const list = document.getElementById('aux-feeds-list');
+                if (list) {
+                    list.innerHTML = '';
+                    const secondaryPool = sportsCache.length > 1 ? sportsCache.slice(1, 4) : [...FALLBACK_LIVE_DB.sports.slice(1), ...FALLBACK_LIVE_DB.channels.slice(0, 2)];
+                    secondaryPool.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'aux-card';
+                        
+                        const itemUrl = (item.streams && item.streams.length > 0) ? item.streams[0].url : (item.stream_url || item.url);
+                        card.onclick = () => triggerLivePlayer(itemUrl, item.name || item.title);
+
+                        const subInfo = item.league || item.category || "Syndicated Feed";
+                        const thumb = item.poster || item.banner || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
+
+                        card.innerHTML = `
+                            <div class="aux-thumb">
+                                <img src="${thumb}" alt="${item.name || item.title}">
+                            </div>
+                            <div class="aux-meta">
+                                <div class="aux-title">${item.name || item.title}</div>
+                                <div class="aux-streaminfo telemetry-font">${subInfo}</div>
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
+                }
+            }
+
+            // Pipes stream targets straight to player microservice
+            function triggerLivePlayer(url, name) {
+                if (!url) return;
+
+                const encodedUrl = encodeURIComponent(url);
+                
+                window.parent.postMessage({
+                    type: 'OPEN_COVER',
+                    url: `/player/live?stream_url=${encodedUrl}`,
+                    fullscreen: false
+                }, '*');
+                
+                window.parent.postMessage({
+                    type: 'SHOW_TOAST',
+                    message: `Routing Feed: ${name}`,
+                    icon: 'ph-broadcast'
+                }, '*');
+            }
+
+            return {
+                init: () => {
+                    loadChannelsData().then(() => {
+                        loadSportsData().then(() => {
+                            populateHubMonitor();
+                        });
+                    });
+                },
+                switchLocalView,
+                filterSports
+            };
+        })();
+
+        // Listen for standard message bindings from our App shell container
+        window.addEventListener('message', (event) => {
+            const { type, action } = event.data;
+            if (type === 'TAB_FOCUSED') {
+                LiveController.init();
+            } else if (type === 'SUB_ACTION') {
+                if (action === 'sports' || action === 'main_live' || action === 'channels') {
+                    const routeMap = { 'main_live': 'hub', 'sports': 'sports', 'channels': 'channels' };
+                    LiveController.switchLocalView(routeMap[action]);
+                }
+            }
+        });
+
+        window.onload = LiveController.init;
+    </script>
+</body>
+</html>

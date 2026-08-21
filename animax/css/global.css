@@ -1,0 +1,73 @@
+/* --- css/global.css --- */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800;900&display=swap');
+
+:root {
+  /* Brand */
+  --brand: #8FE7EC;
+  --brand-dim: rgba(143, 231, 236, 0.15);
+
+  /* Backgrounds */
+  --bg-app: #050505;
+  --bg-nav: #0d0d0f; /* Deep dark for the floating pill */
+  --bg-nav-active: #1f2025; /* The squircle active background */
+  --bg-surface: rgba(20, 20, 24, 0.65);
+  --bg-cover: rgba(0, 0, 0, 0.6);
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #8E8E93;
+  --text-muted: #5c5c60;
+
+  /* Material (Glass) */
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-blur: blur(30px);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.15); /* Controlled physical bounce */
+  --spring-gentle: cubic-bezier(0.1, 0.8, 0.3, 1);
+  
+  /* Dimensions */
+  --safe-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden; 
+  overscroll-behavior-y: none; 
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Hide default scrollbars but preserve system touch scrolling behaviors */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* Global Typography Utilities */
+.text-brand { color: var(--brand); }
+.text-balance { text-wrap: balance; }
+
+/* Physical Button Press */
+.btn-tactile {
+  transition: transform 150ms var(--ease-out-expo), filter 150ms var(--ease-out-expo);
+}
+.btn-tactile:active {
+  transform: scale(0.96);
+  filter: brightness(0.8);
+}

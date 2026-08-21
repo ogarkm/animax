@@ -1,0 +1,647 @@
+<!-- --- covers/onboarding.html --- -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Animax Onboarding</title>
+    
+    <link rel="stylesheet" href="../css/global.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        /* --- 1. Aesthetic Override & CSS Variables --- */
+        :root {
+            --brand: #ffffff;
+            --brand-dim: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.35);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: 24px;
+        }
+
+        /* --- 2. Cinematic Minimal Dark Background --- */
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100dvh;
+            position: relative;
+            background-color: #050505;
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .cinematic-bg {
+            position: absolute;
+            inset: 0;
+            background: #050505;
+            z-index: 1;
+            overflow: hidden;
+            opacity: 0;
+            /* Delayed background bloom to keep emphasis on the rising card first */
+            animation: bgFadeIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+        }
+
+        @keyframes bgFadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Slow, rotating, drifting cosmic ambient lights */
+        .cinematic-bg::before,
+        .cinematic-bg::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.14;
+        }
+
+        .cinematic-bg::before {
+            background: radial-gradient(circle, #ffffff 0%, rgba(255, 255, 255, 0) 70%);
+            top: -10%;
+            left: 15%;
+            width: 70vw;
+            height: 70vw;
+            animation: floatGlow1 22s infinite alternate ease-in-out;
+        }
+
+        .cinematic-bg::after {
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 70%);
+            bottom: -15%;
+            right: 15%;
+            width: 80vw;
+            height: 80vw;
+            animation: floatGlow2 26s infinite alternate ease-in-out;
+        }
+
+        @keyframes floatGlow1 {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            50% { transform: translate(8%, 12%) scale(1.15) rotate(180deg); }
+            100% { transform: translate(-4%, -6%) scale(0.9) rotate(360deg); }
+        }
+
+        @keyframes floatGlow2 {
+            0% { transform: translate(0, 0) scale(1.1) rotate(0deg); }
+            50% { transform: translate(-10%, -6%) scale(0.85) rotate(-120deg); }
+            100% { transform: translate(6%, 10%) scale(1) rotate(-240deg); }
+        }
+
+        /* --- 3. Premium Glassmorphic Container --- */
+        .auth-card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-height: 93vh;
+            max-width: 400px;
+            padding: 48px 36px;
+            margin: 24px;
+            background: rgba(18, 18, 18, 0.65);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            box-shadow: 
+                0 30px 60px rgba(0, 0, 0, 0.8), 
+                0 0 100px rgba(255, 255, 255, 0.01),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            
+            /* Physical bounce animation straight up from center on load */
+            opacity: 0;
+            transform: scale(0.92) translateY(50px);
+            animation: cardRise 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s forwards;
+        }
+
+        @keyframes cardRise {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Sleek top accent line */
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .brand-logo svg {
+            width: 72px;
+            height: 72px;
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.15));
+            margin-bottom: 24px;
+        }
+
+        .brand-logo svg path {
+            fill: #ffffff;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            text-align: center;
+            font-weight: 400;
+        }
+
+        /* --- 4. Transition Views --- */
+        .view-section {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: viewEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        @keyframes viewEnter {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 5. Inputs & Fields --- */
+        .input-group {
+            position: relative;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            transition: color 0.3s ease;
+        }
+
+        .glass-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 16px 16px 16px 48px;
+            border-radius: 14px;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-sizing: border-box;
+        }
+
+        .glass-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .glass-input:focus {
+            border-color: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-input:focus + .input-icon,
+        .glass-input:not(:placeholder-shown) + .input-icon {
+            color: var(--text-primary);
+        }
+
+        /* --- 6. Buttons with Action Atomic Chevrons --- */
+        .btn-primary {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 16px 24px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 10px 25px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(255, 255, 255, 0.2), 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        /* Atomic Indicator Wrapper for Buttons */
+        .btn-atomic {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            margin-left: 2px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-primary:hover .btn-atomic {
+            transform: translateX(4px);
+        }
+
+        .btn-chevron {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #000000;
+            z-index: 2;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-dot {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #000000;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-primary:hover .btn-dot {
+            opacity: 0.6;
+        }
+
+        .btn-primary:hover .dot-1 { animation: btnDot1 0.6s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+        .btn-primary:hover .dot-2 { animation: btnDot2 0.6s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+        .btn-primary:hover .dot-3 { animation: btnDot3 0.6s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+
+        @keyframes btnDot1 {
+            0% { opacity: 0; transform: translate(0, 0) scale(1.5); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; transform: translate(-12px, -10px) scale(0); }
+        }
+        @keyframes btnDot2 {
+            0% { opacity: 0; transform: translate(0, 0) scale(1.5); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; transform: translate(-12px, 10px) scale(0); }
+        }
+        @keyframes btnDot3 {
+            0% { opacity: 0; transform: translate(0, 0) scale(1.5); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; transform: translate(12px, 0) scale(0); }
+        }
+
+        .btn-secondary {
+            width: 100%;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 16px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 450;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .btn-secondary:hover { 
+            color: var(--text-primary); 
+        }
+
+        .btn-secondary span { 
+            color: #ffffff; 
+            font-weight: 600; 
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        /* Loading Animation inside Buttons */
+        .btn-loader {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            border-top-color: #000000;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-primary.loading .btn-text { display: none; }
+        .btn-primary.loading .btn-atomic { display: none; }
+        .btn-primary.loading .btn-loader { display: block; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- 7. PWA Flow Aesthetics --- */
+        .pwa-steps {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 24px;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .pwa-step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
+        .pwa-step:last-child { margin-bottom: 0; }
+        
+        .pwa-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #ffffff;
+            flex-shrink: 0;
+        }
+
+        /* --- 8. Error States --- */
+        .error-msg {
+            color: #ff453a;
+            background: rgba(255, 69, 58, 0.08);
+            border: 1px solid rgba(255, 69, 58, 0.15);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            width: 100%;
+            text-align: center;
+            display: none;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cinematic-bg"></div>
+
+    <div class="auth-card">
+        <div class="brand-logo">
+            <!-- Sleek Minimalist SVG -->
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path d="M104.321 172.293L54.1555 172.928C52.264 172.952 51.3995 170.579 52.8629 169.381L142.946 95.5903C143.41 95.2105 143.679 94.6426 143.679 94.0431V90.8091C143.679 90.2785 143.468 89.7696 143.093 89.3945L141.7 88.0024C141.588 87.8901 141.462 87.7916 141.327 87.7089L66.825 42.3214C66.5115 42.1304 66.1515 42.0294 65.7844 42.0294H61.5782C60.9708 42.0294 60.3964 42.3054 60.0168 42.7796L58.1917 45.0599C57.9078 45.4146 57.7531 45.8554 57.7531 46.3097V50.2903C57.7531 50.5071 57.7883 50.7224 57.8575 50.9279L85.2264 132.292C85.4975 133.098 85.2295 133.987 84.5583 134.508L75.0042 141.936C73.9197 142.779 72.3278 142.303 71.884 141.003L42.1073 53.7946C42.0362 53.5866 42 53.3682 42 53.1484V43.0253C42 42.8394 42.0259 42.6544 42.077 42.4756L43.2712 38.2983C43.3762 37.9307 43.5845 37.6009 43.8713 37.348L55.038 27.5C55.4033 27.1778 55.8737 27 56.3609 27H69.3695C69.7335 27 70.0907 27.0994 70.4024 27.2874L152.519 76.8155C152.826 77.0005 153.077 77.2643 153.247 77.5796L157.761 85.9578C157.918 86.2494 158 86.5753 158 86.9064V125.182C158 125.563 157.891 125.935 157.687 126.256L153.164 133.36C153.047 133.544 152.901 133.707 152.732 133.843L105.551 171.851C105.202 172.132 104.769 172.287 104.321 172.293Z"/>
+            </svg>
+        </div>
+
+        <!-- STATE 1: LOGIN -->
+        <form id="view-login" class="view-section active" onsubmit="handleLogin(event)">
+            <h1 class="title">Welcome Back</h1>
+            <p class="subtitle">Access your infinite library.</p>
+
+            <div class="error-msg" id="login-error">Invalid credentials</div>
+
+            <div class="input-group">
+                <input type="text" id="login-user" class="glass-input" placeholder="Username" required autocomplete="username">
+                <i class="ph ph-user input-icon"></i>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="login-pass" class="glass-input" placeholder="Password" required autocomplete="current-password">
+                <i class="ph ph-lock-key input-icon"></i>
+            </div>
+
+            <button type="submit" class="btn-primary btn-tactile" id="btn-login">
+                <span class="btn-text">Sign In</span>
+                <div class="btn-atomic">
+                    <span class="btn-dot dot-1"></span>
+                    <span class="btn-dot dot-2"></span>
+                    <span class="btn-dot dot-3"></span>
+                    <span class="btn-chevron">&rsaquo;</span>
+                </div>
+                <div class="btn-loader"></div>
+            </button>
+            <button type="button" class="btn-secondary" onclick="switchView('register')">
+                New to Animax? <span>Create Account</span>
+            </button>
+        </form>
+
+        <!-- STATE 2: REGISTER -->
+        <form id="view-register" class="view-section" onsubmit="handleRegister(event)">
+            <h1 class="title">Join Animax</h1>
+            <p class="subtitle">Your ultimate tracking companion.</p>
+
+            <div class="error-msg" id="register-error">Registration failed</div>
+
+            <div class="input-group">
+                <input type="text" id="reg-user" class="glass-input" placeholder="Username" required minlength="3">
+                <i class="ph ph-user input-icon"></i>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="reg-pass" class="glass-input" placeholder="Password" required minlength="6">
+                <i class="ph ph-lock-key input-icon"></i>
+            </div>
+
+            <button type="submit" class="btn-primary btn-tactile" id="btn-register">
+                <span class="btn-text">Create Account</span>
+                <div class="btn-atomic">
+                    <span class="btn-dot dot-1"></span>
+                    <span class="btn-dot dot-2"></span>
+                    <span class="btn-dot dot-3"></span>
+                    <span class="btn-chevron">&rsaquo;</span>
+                </div>
+                <div class="btn-loader"></div>
+            </button>
+            <button type="button" class="btn-secondary" onclick="switchView('login')">
+                Already a member? <span>Sign In</span>
+            </button>
+        </form>
+
+        <!-- STATE 3: PWA PROMPT -->
+        <div id="view-pwa" class="view-section">
+            <h1 class="title">Install App</h1>
+            <p class="subtitle">Get the ultimate native experience.</p>
+
+            <div class="pwa-steps">
+                <div class="pwa-step">
+                    <div class="pwa-icon"><i class="ph ph-export"></i></div>
+                    <span>Tap the <strong>Share</strong> button in your browser menu.</span>
+                </div>
+                <div class="pwa-step">
+                    <div class="pwa-icon"><i class="ph ph-plus-square"></i></div>
+                    <span>Select <strong>Add to Home Screen</strong>.</span>
+                </div>
+            </div>
+
+            <button type="button" class="btn-secondary" onclick="sendToParent('CLOSE_COVER')">
+                Continue in browser
+            </button>
+        </div>
+
+    </div>
+
+    <script src="../js/api.js?v=1.0.1"></script>
+    <script>
+        // --- 1. Router & Initialization ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialMode = urlParams.get('mode') || 'auth';
+
+        if (initialMode === 'pwa') {
+            switchView('pwa');
+        } else {
+            // Default to login
+            switchView('login');
+            // If API token already exists but they are here, clear it
+            if(window.AnimaxAPI && window.AnimaxAPI.getToken()) {
+                window.AnimaxAPI.clearToken();
+            }
+        }
+
+        // --- 2. View Management & Value Preservation ---
+        function switchView(viewId) {
+            const currentActive = document.querySelector('.view-section.active');
+            
+            // Transfer input values bidirectionally between Login and Register states
+            if (currentActive) {
+                const currentId = currentActive.id;
+                if (currentId === 'view-login' && viewId === 'register') {
+                    document.getElementById('reg-user').value = document.getElementById('login-user').value;
+                    document.getElementById('reg-pass').value = document.getElementById('login-pass').value;
+                } else if (currentId === 'view-register' && viewId === 'login') {
+                    document.getElementById('login-user').value = document.getElementById('reg-user').value;
+                    document.getElementById('login-pass').value = document.getElementById('reg-pass').value;
+                }
+            }
+
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            
+            // Add a tiny delay to allow CSS reflow for animation
+            setTimeout(() => {
+                document.getElementById(`view-${viewId}`).classList.add('active');
+            }, 10);
+            
+            // Clear errors
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('register-error').style.display = 'none';
+        }
+
+        // --- 3. Shell Communication ---
+        function sendToParent(type, data = {}) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type, ...data }, '*');
+            }
+        }
+
+        // --- 4. Auth Logic ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            const errorMsg = document.getElementById('login-error');
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+
+            errorMsg.style.display = 'none';
+            btn.classList.add('loading');
+
+            try {
+                // User backend uses OAuth2PasswordRequestForm. We must send x-www-form-urlencoded
+                const formData = new URLSearchParams();
+                formData.append('username', user);
+                formData.append('password', pass);
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.detail || "Login failed");
+
+                // Success! Save token and tell shell
+                window.AnimaxAPI.setToken(data.access_token);
+                sendToParent('AUTH_SUCCESS', { token: data.access_token });
+
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+                // Shake animation on error
+                document.querySelector('.auth-card').animate([
+                    { transform: 'translateX(-10px)' },
+                    { transform: 'translateX(10px)' },
+                    { transform: 'translateX(-10px)' },
+                    { transform: 'translateX(0)' }
+                ], { duration: 300, easing: 'ease-out' });
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-register');
+            const errorMsg = document.getElementById('register-error');
+            const user = document.getElementById('reg-user').value;
+            const pass = document.getElementById('reg-pass').value;
+
+            errorMsg.style.display = 'none';
+            btn.classList.add('loading');
+
+            try {
+                // Registration uses standard JSON `UserCreate` model
+                await window.AnimaxAPI.post('/auth/register', {
+                    username: user,
+                    password: pass
+                });
+
+                sendToParent('SHOW_TOAST', { message: 'Account created! Please sign in.', icon: 'ph-check-circle' });
+                switchView('login');
+                
+                // Pre-fill username
+                document.getElementById('login-user').value = user;
+                document.getElementById('login-pass').focus();
+
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+    </script>
+</body>
+</html>

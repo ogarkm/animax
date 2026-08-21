@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Animax - Home</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* --- Page Base Override --- */
+        body {
+            background-color: #050505;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 120px; /* Space for mobile tab bar */
+            scroll-behavior: smooth;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* --- Ambient Lighting Effect --- */
+        .ambient-glow {
+            position: fixed;
+            top: -20vh;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 0%, rgba(143, 231, 236, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: -1;
+            filter: blur(60px);
+        }
+
+        /* ==================================================================
+           MODERN HEADER — Floating Navigation & Search
+           ================================================================== */
+        .landing-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 32px 6%;
+            box-sizing: border-box;
+            z-index: 100;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        /* Clean, bold typography to replace the atomic canvas */
+        .brand-logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-logo::after {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--brand, #8FE7EC);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--brand, #8FE7EC);
+            margin-bottom: 4px;
+        }
+
+        /* Sleek Glassmorphic Search Bar */
+        .modern-search-bar {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+            height: 48px;
+            padding: 0 6px 0 20px;
+            border-radius: 24px;
+            background: rgba(20, 20, 24, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modern-search-bar:focus-within, .modern-search-bar:hover {
+            background: rgba(25, 25, 30, 0.6);
+            border-color: rgba(143, 231, 236, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(143, 231, 236, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .modern-search-icon {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.5);
+            transition: color 0.3s ease;
+        }
+
+        .modern-search-bar:focus-within .modern-search-icon {
+            color: var(--brand, #8FE7EC);
+        }
+
+        .modern-search-input {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .modern-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 400;
+        }
+
+        .modern-search-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--brand, #8FE7EC);
+            color: #050505;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .modern-search-submit:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 12px var(--brand, #8FE7EC);
+        }
+
+        /* ==================================================================
+           HERO SECTION — Immersive Cinematic Layout
+           ================================================================== */
+        #hero-container {
+            position: relative;
+            width: 100%;
+            height: 85vh;
+            min-height: 600px;
+            max-height: 900px;
+            background: #050505;
+            overflow: hidden;
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
+
+        /* Smooth Cross-fading Dual Backdrop Layer */
+        .hero-bg-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 20%;
+            filter: brightness(0.65) saturate(1.1);
+            z-index: 1;
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 8s ease-out;
+            opacity: 0;
+            transform: scale(1.05);
+        }
+
+        .hero-bg-layer.active {
+            opacity: 0.85;
+            transform: scale(1);
+        }
+
+        .hero-vignette {
+            position: absolute;
+            inset: 0;
+            background: 
+                linear-gradient(to top, #050505 0%, rgba(5, 5, 5, 0.6) 30%, rgba(5, 5, 5, 0) 70%),
+                linear-gradient(to right, #050505 5%, rgba(5, 5, 5, 0.3) 40%, rgba(5, 5, 5, 0) 100%);
+            z-index: 2;
+        }
+
+        .hero-layout-wrapper {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            display: grid;
+            align-items: end;
+            gap: 40px;
+            padding: 0 6% 12vh 6%;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* --- 1. Cinema Mode --- */
+        #hero-container.cinema-mode .hero-layout-wrapper {
+            grid-template-columns: 100%;
+        }
+
+        #hero-container.cinema-mode .book-stack-area {
+            display: none;
+        }
+
+        /* --- 2. Manga Mode --- */
+        #hero-container.manga-mode .hero-layout-wrapper {
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            padding-top: 10vh;
+        }
+
+        #hero-container.manga-mode .book-stack-area {
+            display: flex;
+        }
+
+        /* --- Stack of Book Posters Component --- */
+        .book-stack-area {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            perspective: 1200px;
+            margin-right: 20px;
+        }
+
+        .book-stack-container {
+            position: relative;
+            width: 210px;
+            height: 310px;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .book-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease, z-index 0.6s ease;
+            transform-style: preserve-3d;
+            background: #141418;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .book-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        /* 3D Stack Fanned Positions */
+        .book-card.prev-card {
+            transform: translate3d(-60px, 0, -100px) rotate(-12deg) scale(0.85);
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        .book-card.active-card {
+            transform: translate3d(0, 0, 20px) rotate(0deg) scale(1.05);
+            z-index: 5;
+            opacity: 1;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(143, 231, 236, 0.2);
+            border-color: rgba(143, 231, 236, 0.4);
+        }
+
+        .book-card.next-card {
+            transform: translate3d(60px, 0, -100px) rotate(12deg) scale(0.85);
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        /* Top 10 Badge */
+        .top-10-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--brand, #8FE7EC);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        /* --- Hero Info Layout --- */
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 650px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes heroTextIn {
+            0% { opacity: 0; transform: translateY(20px); filter: blur(8px); }
+            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        .hero-text-animate {
+            animation: heroTextIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .hero-badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .hero-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.95);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .hero-badge.rating {
+            background: rgba(143, 231, 236, 0.15);
+            border-color: rgba(143, 231, 236, 0.4);
+            color: var(--brand, #8FE7EC);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .hero-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5vw, 4rem);
+            line-height: 1.05;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -0.03em;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            margin: 0;
+        }
+
+        .hero-japanese-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--brand, #8FE7EC);
+            opacity: 0.9;
+            letter-spacing: 0.08em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .hero-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.75);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            max-width: 580px;
+        }
+
+        .hero-btn-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .btn-premium {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-premium.primary {
+            background: #ffffff;
+            color: #050505;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-premium.primary:hover {
+            transform: translateY(-2px);
+            background: var(--brand, #8FE7EC);
+            box-shadow: 0 8px 25px rgba(143, 231, 236, 0.4);
+        }
+
+        .btn-premium.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .btn-premium.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .hero-dots {
+            position: absolute;
+            right: 6%;
+            bottom: 40px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .hero-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hero-dot.active {
+            background: var(--brand, #8FE7EC);
+            width: 32px;
+            border-radius: 4px;
+            box-shadow: 0 0 12px rgba(143, 231, 236, 0.6);
+        }
+
+        /* ==================================================================
+           QUICK ACCESS STRIP — Floating Pills Overlapping Hero
+           ================================================================== */
+        .quick-access-strip {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            gap: 16px;
+            padding: 0 6%;
+            margin-top: -30px;
+            margin-bottom: 40px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-snap-type: x mandatory;
+        }
+
+        .quick-access-strip::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-pill {
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            border-radius: 20px;
+            background: rgba(20, 20, 24, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .category-pill:hover {
+            transform: translateY(-6px);
+            background: rgba(30, 30, 36, 0.8);
+            border-color: rgba(143, 231, 236, 0.4);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(143, 231, 236, 0.1);
+        }
+
+        .category-pill-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--brand, #8FE7EC);
+            font-size: 1.4rem;
+            transition: all 0.3s ease;
+        }
+
+        .category-pill:hover .category-pill-icon {
+            background: rgba(143, 231, 236, 0.15);
+            transform: scale(1.1);
+        }
+
+        .category-pill-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .category-pill-text h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .category-pill-text p {
+            margin: 0;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ==================================================================
+           MEDIA SHELVES
+           ================================================================== */
+        .shelf-section {
+            padding: 0 6%;
+            margin-bottom: 48px;
+            position: relative;
+        }
+
+        .media-type-group {
+            margin-bottom: 24px;
+        }
+
+        .media-group-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 6%;
+            margin-bottom: 16px;
+        }
+
+        .media-group-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .media-group-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
+        }
+
+        .shelf-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .shelf-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Modern, clean vertical indicator (Replacing the scattered atomic text) */
+        .modern-indicator {
+            width: 4px;
+            height: 0px;
+            background: var(--brand, #8FE7EC);
+            border-radius: 4px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+        }
+
+        .shelf-section:hover .modern-indicator {
+            height: 24px;
+            opacity: 1;
+            box-shadow: 0 0 12px rgba(143, 231, 236, 0.6);
+        }
+
+        .shelf-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin: 0;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .shelf-section:hover .shelf-title {
+            transform: translateX(4px);
+        }
+
+        .shelf-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--brand, #8FE7EC);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 16px;
+            background: rgba(143, 231, 236, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .shelf-link:hover {
+            background: rgba(143, 231, 236, 0.15);
+            transform: translateX(4px);
+        }
+
+        .shelf-scroller {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 8px 0 24px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth;
+        }
+
+        .shelf-scroller::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* --- WIDE CARDS (Continue Watching) --- */
+        .continue-card {
+            flex: 0 0 280px;
+            height: 157px;
+            background: #101012;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            scroll-snap-align: start;
+        }
+
+        @media (min-width: 769px) {
+            .continue-card { flex: 0 0 320px; height: 180px; }
+        }
+
+        .continue-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: rgba(143, 231, 236, 0.3);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.8), 0 0 20px rgba(143, 231, 236, 0.1);
+        }
+
+        .continue-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .continue-card:hover .continue-thumbnail {
+            transform: scale(1.05);
+        }
+
+        .continue-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .continue-meta-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .continue-title {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .continue-episode {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+
+        .progress-bar-container {
+            width: calc(100% - 32px);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--brand, #8FE7EC);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 8px var(--brand, #8FE7EC);
+        }
+
+        .continue-dismiss {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.2s ease;
+        }
+
+        .continue-card:hover .continue-dismiss {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .continue-dismiss:hover {
+            background: #ffffff;
+            color: #000;
+        }
+
+        .continue-play-trigger {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(143, 231, 236, 0.9);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 20px rgba(143, 231, 236, 0.4);
+            z-index: 5;
+        }
+
+        .continue-card:hover .continue-play-trigger {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* --- STANDARD MEDIA POSTER CARDS --- */
+        .media-card {
+            flex: 0 0 140px;
+            display: flex;
+            max-width: 180px;
+            flex-direction: column;
+            gap: 10px;
+            cursor: pointer;
+            scroll-snap-align: start;
+        }
+
+        @media (min-width: 769px) {
+            .media-card { flex: 0 0 170px; }
+        }
+
+        .media-poster-wrap {
+            position: relative;
+            width: 180px;
+            height: 270px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #101012;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .media-card:hover .media-poster-wrap {
+            transform: translateY(-6px);
+            border-color: rgba(143, 231, 236, 0.4);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(143, 231, 236, 0.15);
+        }
+
+        .media-poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .media-card:hover .media-poster {
+            transform: scale(1.05);
+        }
+
+        .media-badge-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        .media-rating-overlay {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: var(--brand, #8FE7EC);
+            color: #000;
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .media-card-title {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.2s ease;
+        }
+
+        .media-card:hover .media-card-title {
+            color: var(--brand, #8FE7EC);
+        }
+
+        .media-card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* --- Shimmer Skeleton Loader --- */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(20, 20, 24, 0.4) 25%, rgba(40, 40, 48, 0.6) 37%, rgba(20, 20, 24, 0.4) 63%);
+            background-size: 400% 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 900px) {
+            .landing-header {
+                padding: 20px 6%;
+                flex-direction: column;
+                align-items: stretch;
+                background: linear-gradient(to bottom, rgba(5,5,5,0.9), transparent);
+            }
+            .brand-logo { justify-content: center; margin-bottom: 10px; }
+            .modern-search-bar { max-width: 100%; }
+            
+            #hero-container {
+                height: 75vh;
+            }
+
+            #hero-container.manga-mode .hero-layout-wrapper {
+                grid-template-columns: 100%;
+                gap: 24px;
+                padding-top: 18vh;
+                text-align: center;
+            }
+
+            .book-stack-area {
+                margin: 0 auto;
+            }
+
+            .hero-content {
+                align-items: center;
+                gap: 12px;
+            }
+
+            .hero-badge-row { justify-content: center; }
+            .hero-btn-row { width: 100%; justify-content: center; }
+            .hero-dots {
+                position: relative;
+                right: auto;
+                bottom: auto;
+                margin-top: 16px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 2. Cinematic Hero / Landing Section -->
+    <section id="hero-container" class="cinema-mode">
+        <!-- Smooth Cross-fading Backdrops -->
+        <img id="backdrop-layer-1" class="hero-bg-layer active" src="" alt="backdrop">
+        <img id="backdrop-layer-2" class="hero-bg-layer" src="" alt="backdrop-incoming">
+        
+        <div class="hero-vignette"></div>
+
+        <div class="hero-layout-wrapper">
+            <!-- Left Pane: 3D Stack (Manga Mode only) -->
+            <div class="book-stack-area">
+                <div class="book-stack-container" id="interactive-book-stack">
+                    <div id="stack-prev" class="book-card prev-card"></div>
+                    <div id="stack-active" class="book-card active-card">
+                        <div class="top-10-badge">TOP 10</div>
+                    </div>
+                    <div id="stack-next" class="book-card next-card"></div>
+                </div>
+            </div>
+
+            <!-- Right Pane: Context -->
+            <div class="hero-content" id="hero-text-container">
+                <div class="hero-badge-row" id="hero-badge-container"></div>
+                <div class="hero-title-group">
+                    <h1 class="hero-title" id="hero-main-title">Loading Spotlight...</h1>
+                    <span class="hero-japanese-title" id="hero-sub-title"></span>
+                </div>
+                <p class="hero-description" id="hero-desc"></p>
+                
+                <div class="hero-btn-row">
+                    <a id="hero-play-btn" class="btn-premium primary">
+                        <i class="ph-fill ph-play"></i> Watch Now
+                    </a>
+                    <a id="hero-detail-btn" class="btn-premium secondary">
+                        <i class="ph ph-info"></i> Details
+                    </a>
+                </div>
+
+                <div class="hero-dots" id="hero-dots-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Continue Watching Shelf -->
+    <section class="shelf-section" id="continue-watching-section" style="display: none;">
+        <div class="shelf-header">
+            <div class="shelf-title-wrap">
+                <div class="modern-indicator"></div>
+                <h2 class="shelf-title">Continue Watching</h2>
+            </div>
+            <a class="shelf-link" id="clear-progress-btn">
+                Clear All
+            </a>
+        </div>
+        <div class="shelf-scroller" id="continue-scroller">
+            <!-- Rendered dynamically -->
+        </div>
+    </section>
+
+    <!-- 5. Dynamic API Media Shelves -->
+    <main id="shelves-mount"></main>
+
+    <script src="../js/api.js?v=1.0.1"></script>
+    <script>
+        const HomeTab = (function() {
+            let activeSlideIndex = 0;
+            let slideInterval = null;
+            let rawApiPayload = null; 
+            let spotlightList = [];
+            let activeBgLayer = 1;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeMode = urlParams.get('mode');
+
+            // --- Media Type Grouping Helpers ---
+            const MEDIA_TYPE_ORDER = ['movies', 'tv_shows', 'anime', 'manga', 'other'];
+            const MEDIA_TYPE_LABELS = {
+                anime: 'Anime',
+                manga: 'Manga',
+                tv_shows: 'TV Shows',
+                movies: 'Movies',
+                other: 'More'
+            };
+
+            function inferMediaType(key) {
+                const k = key.toLowerCase();
+                if (k.includes('anime')) return 'anime';
+                if (k.includes('manga')) return 'manga';
+                if (k.includes('tv')) return 'tv_shows';
+                if (k.includes('movie')) return 'movies';
+                return 'other';
+            }
+
+            function getJapaneseTitle(title) {
+                const norm = title.toLowerCase();
+                if (norm.includes("jujutsu kaisen")) return "呪術廻戦";
+                if (norm.includes("chainsaw man")) return "チェンソーマン";
+                if (norm.includes("attack on titan") || norm.includes("shingeki")) return "進撃の巨人";
+                if (norm.includes("demon slayer") || norm.includes("kimetsu")) return "鬼滅の刃";
+                if (norm.includes("one piece")) return "ワンピース";
+                if (norm.includes("naruto")) return "ナルト";
+                if (norm.includes("bleach")) return "ブリーチ";
+                if (norm.includes("monster")) return "モンスター";
+                return "特別セレクション"; 
+            }
+
+            function setupCarousel(items) {
+                let spotlight = [];
+
+                if (activeMode) {
+                    spotlight = items.filter(item => {
+                        if (activeMode === 'movies' && item.type === 'movie') return true;
+                        if (activeMode === 'tv' && (item.type === 'tv' || item.type === 'tv_shows')) return true;
+                        if (activeMode === 'anime' && item.type === 'anime') return true;
+                        if (activeMode === 'manga' && item.type === 'manga') return true;
+                        return false;
+                    });
+
+                    if (spotlight.length === 0 && rawApiPayload) {
+                        Object.entries(rawApiPayload).forEach(([shelfName, categoryItems]) => {
+                            if (Array.isArray(categoryItems)) {
+                                const match = categoryItems.filter(item => {
+                                    if (activeMode === 'movies' && item.type === 'movie') return true;
+                                    if (activeMode === 'tv' && (item.type === 'tv' || item.type === 'tv_shows')) return true;
+                                    if (activeMode === 'anime' && item.type === 'anime') return true;
+                                    if (activeMode === 'manga' && item.type === 'manga') return true;
+                                    return false;
+                                });
+                                spotlight = spotlight.concat(match);
+                            }
+                        });
+                    }
+
+                    const uniqueIds = new Set();
+                    spotlight = spotlight.filter(item => {
+                        if (!uniqueIds.has(item.id)) {
+                            uniqueIds.add(item.id);
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+
+                if (spotlight.length === 0) {
+                    spotlight = items.slice(0, 5);
+                } else {
+                    spotlight = spotlight.slice(0, 5);
+                }
+
+                spotlightList = spotlight;
+                activeSlideIndex = 0;
+
+                renderActiveSlide();
+                renderCarouselDots();
+                setupTouchGestures();
+                startAutoSlide();
+            }
+
+            function crossFadeBackdrop(newUrl) {
+                const layer1 = document.getElementById('backdrop-layer-1');
+                const layer2 = document.getElementById('backdrop-layer-2');
+
+                if (activeBgLayer === 1) {
+                    layer2.src = newUrl;
+                    layer2.classList.add('active');
+                    layer1.classList.remove('active');
+                    activeBgLayer = 2;
+                } else {
+                    layer1.src = newUrl;
+                    layer1.classList.add('active');
+                    layer2.classList.remove('active');
+                    activeBgLayer = 1;
+                }
+            }
+
+            function renderActiveSlide() {
+                if (!spotlightList.length) return;
+
+                const item = spotlightList[activeSlideIndex];
+                const heroContainer = document.getElementById('hero-container');
+                const textContainer = document.getElementById('hero-text-container');
+
+                const isMangaMode = activeMode === 'manga' || item.type === 'manga';
+                if (isMangaMode) {
+                    heroContainer.className = 'manga-mode';
+                } else {
+                    heroContainer.className = 'cinema-mode';
+                }
+
+                const mainCover = item.banner_url || item.poster_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=800&q=80";
+                crossFadeBackdrop(mainCover);
+
+                if (isMangaMode) {
+                    const prevItem = spotlightList[(activeSlideIndex - 1 + spotlightList.length) % spotlightList.length];
+                    const nextItem = spotlightList[(activeSlideIndex + 1) % spotlightList.length];
+
+                    const prevCover = prevItem.poster_url || prevItem.banner_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=400&q=80";
+                    const nextCover = nextItem.poster_url || nextItem.banner_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=400&q=80";
+
+                    document.getElementById('stack-prev').innerHTML = `<img src="${prevCover}" alt="Previous">`;
+                    document.getElementById('stack-active').innerHTML = `
+                        <img src="${mainCover}" alt="Current">
+                        <div class="top-10-badge">TOP 10</div>
+                    `;
+                    document.getElementById('stack-next').innerHTML = `<img src="${nextCover}" alt="Next">`;
+                }
+
+                textContainer.classList.remove('hero-text-animate');
+                void textContainer.offsetWidth; // Trigger layout reflow
+                textContainer.classList.add('hero-text-animate');
+
+                document.getElementById('hero-main-title').innerText = item.title;
+
+                const subTitleEl = document.getElementById('hero-sub-title');
+                const isJapaneseMedia = item.type === 'anime' || item.type === 'manga' || isMangaMode;
+                if (isJapaneseMedia) {
+                    subTitleEl.innerText = getJapaneseTitle(item.title);
+                    subTitleEl.style.display = '';
+                } else {
+                    subTitleEl.innerText = '';
+                    subTitleEl.style.display = 'none';
+                }
+
+                document.getElementById('hero-desc').innerText = item.description || `Explore this top-tier visual masterpiece on Animax. Featuring gorgeous hand-drawn elements, optimized pacing, and emotional character arcs.`;
+
+                const ratingText = item.rating ? item.rating.toFixed(1) : "8.9";
+                const badgeContainer = document.getElementById('hero-badge-container');
+                badgeContainer.innerHTML = `
+                    <span class="hero-badge rating"><i class="ph-fill ph-star"></i> ${ratingText}</span>
+                    <span class="hero-badge">${item.type || 'Manga'}</span>
+                    ${item.release_year ? `<span class="hero-badge">${item.release_year}</span>` : '<span class="hero-badge">2026</span>'}
+                `;
+
+                document.getElementById('hero-play-btn').onclick = () => handleMediaAction(item.id, 'PLAY');
+                document.getElementById('hero-detail-btn').onclick = () => handleMediaAction(item.id, 'DETAIL');
+
+                const dots = document.querySelectorAll('.hero-dot');
+                dots.forEach((dot, idx) => {
+                    if (idx === activeSlideIndex) dot.classList.add('active');
+                    else dot.classList.remove('active');
+                });
+            }
+
+            function renderCarouselDots() {
+                const dotsContainer = document.getElementById('hero-dots-container');
+                dotsContainer.innerHTML = '';
+                
+                spotlightList.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = `hero-dot ${index === 0 ? 'active' : ''}`;
+                    dot.addEventListener('click', () => {
+                        activeSlideIndex = index;
+                        renderActiveSlide();
+                        startAutoSlide();
+                    });
+                    dotsContainer.appendChild(dot);
+                });
+            }
+
+            function shiftSlide(direction) {
+                if (!spotlightList.length) return;
+                activeSlideIndex = (activeSlideIndex + direction + spotlightList.length) % spotlightList.length;
+                renderActiveSlide();
+            }
+
+            function startAutoSlide() {
+                clearInterval(slideInterval);
+                slideInterval = setInterval(() => {
+                    shiftSlide(1);
+                }, 8000);
+            }
+
+            function setupTouchGestures() {
+                const stackContainer = document.getElementById('interactive-book-stack');
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                stackContainer.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].clientX;
+                }, { passive: true });
+
+                stackContainer.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].clientX;
+                    const diff = touchStartX - touchEndX;
+
+                    if (Math.abs(diff) > 40) {
+                        if (diff > 0) shiftSlide(1);
+                        else shiftSlide(-1);
+                        startAutoSlide();
+                    }
+                }, { passive: true });
+
+                document.getElementById('stack-prev').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    shiftSlide(-1);
+                    startAutoSlide();
+                });
+                document.getElementById('stack-next').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    shiftSlide(1);
+                    startAutoSlide();
+                });
+            }
+
+            function renderContinueWatching() {
+                const section = document.getElementById('continue-watching-section');
+                const scroller = document.getElementById('continue-scroller');
+                
+                const progressDataRaw = localStorage.getItem('animax_local_progress');
+                if (!progressDataRaw) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    const progressList = JSON.parse(progressDataRaw);
+                    if (!progressList || Object.keys(progressList).length === 0) {
+                        section.style.display = 'none';
+                        return;
+                    }
+
+                    scroller.innerHTML = '';
+                    section.style.display = 'block';
+
+                    const sortedItems = Object.values(progressList).sort((a, b) => {
+                        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+                    });
+
+                    sortedItems.forEach(item => {
+                        const progressPct = Math.min(100, Math.round((item.timestamp / item.duration) * 100)) || 0;
+                        const card = document.createElement('div');
+                        card.className = 'continue-card';
+                        
+                        card.innerHTML = `
+                            <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80'}" class="continue-thumbnail" alt="${item.title}">
+                            <div class="continue-dismiss" onclick="HomeTab.removeProgressItem(event, '${item.media_id}')">
+                                <i class="ph ph-x"></i>
+                            </div>
+                            <div class="continue-play-trigger" onclick="HomeTab.handleMediaAction('${item.media_id}', 'PLAY', ${item.episode_number})">
+                                <i class="ph-fill ph-play"></i>
+                            </div>
+                            <div class="continue-overlay" onclick="HomeTab.handleMediaAction('${item.media_id}', 'DETAIL')">
+                                <div class="continue-meta-info">
+                                    <h4 class="continue-title">${item.title}</h4>
+                                    <span class="continue-episode">Episode ${item.episode_number}</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-fill" style="width: ${progressPct}%"></div>
+                            </div>
+                        `;
+                        scroller.appendChild(card);
+                    });
+                } catch (e) {
+                    console.error("Failed to render watch progress shelf:", e);
+                    section.style.display = 'none';
+                }
+            }
+
+            function removeProgressItem(event, mediaId) {
+                event.stopPropagation();
+                try {
+                    const progressDataRaw = localStorage.getItem('animax_local_progress');
+                    if (progressDataRaw) {
+                        const data = JSON.parse(progressDataRaw);
+                        delete data[mediaId];
+                        localStorage.setItem('animax_local_progress', JSON.stringify(data));
+                        
+                        window.parent.postMessage({ type: 'SHOW_TOAST', message: 'Item removed from watch history', icon: 'ph-trash' }, '*');
+                        renderContinueWatching();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            function clearAllProgress() {
+                localStorage.removeItem('animax_local_progress');
+                window.parent.postMessage({ type: 'SHOW_TOAST', message: 'Watch history cleared', icon: 'ph-check-circle' }, '*');
+                renderContinueWatching();
+            }
+
+            async function buildHomeShelves() {
+                const mount = document.getElementById('shelves-mount');
+                mount.innerHTML = '';
+
+                for (let i = 0; i < 3; i++) {
+                    mount.appendChild(createShelfSkeleton());
+                }
+
+                try {
+                    const data = await window.AnimaxAPI.get('/home');
+                    rawApiPayload = data;
+                    mount.innerHTML = '';
+
+                    if (data && Object.keys(data).length > 0) {
+                        const spotlightItems = data.spotlight || [];
+                        setupCarousel(spotlightItems.length ? spotlightItems : Object.values(data)[0]);
+
+                        const groupedEntries = {};
+                        Object.entries(data).forEach(([key, items]) => {
+                            if (key === 'spotlight' || !Array.isArray(items) || items.length === 0) return;
+
+                            if (activeMode) {
+                                if (activeMode === 'movies' && !key.includes('movie')) return;
+                                if (activeMode === 'tv' && !key.includes('tv')) return;
+                                if (activeMode === 'anime' && !key.includes('anime')) return;
+                                if (activeMode === 'manga' && !key.includes('manga')) return;
+                            }
+
+                            const mediaType = inferMediaType(key);
+                            if (!groupedEntries[mediaType]) groupedEntries[mediaType] = [];
+                            groupedEntries[mediaType].push([key, items]);
+                        });
+
+                        renderGroupedShelves(groupedEntries);
+                    } else {
+                        throw new Error("Empty response");
+                    }
+
+                } catch (err) {
+                    console.warn("[Animax Home] Fetch error, utilizing fallback database.", err);
+                    mount.innerHTML = '';
+
+                    const groupedEntries = {};
+                    let flatItems = [];
+                    Object.entries(FALLBACK_DATABASE).forEach(([key, items]) => {
+                        if (!Array.isArray(items) || items.length === 0) return;
+
+                        if (activeMode) {
+                            if (activeMode === 'movies' && key !== 'movies') return;
+                            if (activeMode === 'tv' && key !== 'tv_shows') return;
+                            if (activeMode === 'anime' && key !== 'anime') return;
+                            if (activeMode === 'manga' && key !== 'manga') return;
+                        }
+
+                        flatItems = flatItems.concat(items);
+                        const mediaType = inferMediaType(key);
+                        if (!groupedEntries[mediaType]) groupedEntries[mediaType] = [];
+                        groupedEntries[mediaType].push([key, items]);
+                    });
+
+                    renderGroupedShelves(groupedEntries);
+                    setupCarousel(flatItems);
+                }
+            }
+
+            function renderGroupedShelves(groupedEntries) {
+                const mount = document.getElementById('shelves-mount');
+
+                MEDIA_TYPE_ORDER.forEach(mediaType => {
+                    const entries = groupedEntries[mediaType];
+                    if (!entries || entries.length === 0) return;
+
+                    const group = document.createElement('div');
+                    group.className = 'media-type-group';
+                    group.id = `group-${mediaType}`;
+                    group.innerHTML = `
+                        <div class="media-group-header">
+                            <span class="media-group-label">${MEDIA_TYPE_LABELS[mediaType]}</span>
+                            <div class="media-group-line"></div>
+                        </div>
+                    `;
+                    mount.appendChild(group);
+
+                    entries.forEach(([key, items]) => renderCategoryShelf(key, items, group));
+                });
+            }
+
+            function renderCategoryShelf(key, items, container) {
+                if (!items || items.length === 0) return;
+
+                const mount = container || document.getElementById('shelves-mount');
+                const formattedTitle = key
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase());
+
+                const section = document.createElement('section');
+                section.className = 'shelf-section';
+                section.id = `shelf-${key}`;
+                
+                const shelfHeader = `
+                    <div class="shelf-header">
+                        <div class="shelf-title-wrap">
+                            <div class="modern-indicator"></div>
+                            <h2 class="shelf-title">${formattedTitle}</h2>
+                        </div>
+                        <a class="shelf-link" onclick="HomeTab.handleCategoryNavigate('${key}')">
+                            See All
+                        </a>
+                    </div>
+                `;
+
+                const scroller = document.createElement('div');
+                scroller.className = 'shelf-scroller';
+
+                items.forEach(item => {
+                    const ratingVal = item.rating ? item.rating.toFixed(1) : "N/A";
+                    const poster = item.poster_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=400&q=80";
+
+                    const card = document.createElement('div');
+                    card.className = 'media-card';
+                    card.onclick = () => handleMediaAction(item.id, 'DETAIL');
+                    card.innerHTML = `
+                        <div class="media-poster-wrap">
+                            <img src="${poster}" class="media-poster" alt="${item.title}" loading="lazy">
+                            <span class="media-badge-overlay">${item.type}</span>
+                            <span class="media-rating-overlay">
+                                <i class="ph-fill ph-star"></i> ${ratingVal}
+                            </span>
+                        </div>
+                        <h4 class="media-card-title">${item.title}</h4>
+                        <div class="media-card-meta">
+                            <span>${item.release_year || '2026'}</span>
+                            <span><i class="ph ph-clock"></i> Sub/Dub</span>
+                        </div>
+                    `;
+                    scroller.appendChild(card);
+                });
+
+                section.innerHTML = shelfHeader;
+                section.appendChild(scroller);
+                mount.appendChild(section);
+            }
+
+            function createShelfSkeleton() {
+                const section = document.createElement('section');
+                section.className = 'shelf-section';
+                section.innerHTML = `
+                    <div class="shelf-header">
+                        <div class="shelf-title-wrap">
+                            <div class="modern-indicator"></div>
+                            <div style="width: 150px; height: 24px; border-radius: 6px;" class="skeleton"></div>
+                        </div>
+                        <div style="width: 70px; height: 18px; border-radius: 6px;" class="skeleton"></div>
+                    </div>
+                    <div class="shelf-scroller">
+                        ${Array(6).fill().map(() => `
+                            <div class="media-card">
+                                <div class="media-poster-wrap skeleton"></div>
+                                <div style="width: 90%; height: 14px; border-radius: 4px;" class="skeleton"></div>
+                                <div style="width: 60%; height: 12px; border-radius: 4px;" class="skeleton"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                return section;
+            }
+
+            function handleMediaAction(mediaId, actionType, absoluteEpisodeNum = 1) {
+                if (actionType === 'PLAY') {
+                    window.parent.postMessage({
+                        type: 'OPEN_COVER',
+                        url: `/covers/info.html?id=${mediaId}?play=true`,
+                        fullscreen: false
+                    }, '*');
+                } else if (actionType === 'DETAIL') {
+                    window.parent.postMessage({
+                        type: 'OPEN_COVER',
+                        url: `/covers/info.html?id=${mediaId}`,
+                        fullscreen: false
+                    }, '*');
+                }
+            }
+
+            function handleCategoryNavigate(categoryKey) {
+                let mappedSubAction = 'movies';
+                if (categoryKey.includes('anime')) mappedSubAction = 'release_schedule';
+                if (categoryKey.includes('tv')) mappedSubAction = 'tv_shows';
+
+                window.parent.postMessage({
+                    type: 'SHOW_TOAST',
+                    message: `Filtering catalog for: ${categoryKey.replace(/_/g, ' ')}`,
+                    icon: 'ph-compass'
+                }, '*');
+                
+                window.parent.postMessage({
+                    type: 'TRIGGER_SUB_ACTION',
+                    action: mappedSubAction
+                }, '*');
+            }
+
+            return {
+                init: () => {
+                    buildHomeShelves();
+                    renderContinueWatching();
+
+                    document.getElementById('clear-progress-btn').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        clearAllProgress();
+                    });
+
+                    // Search listener bindings
+                    const searchInput = document.getElementById('hubSearchInput');
+                    const searchBtn = document.getElementById('hubSearchSubmit');
+                    
+                    const triggerSearch = () => {
+                        const query = searchInput.value.trim();
+                        window.parent.postMessage({ type: 'OPEN_DISCOVER', query }, '*');
+                    };
+
+                    searchInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') triggerSearch();
+                    });
+                    if (searchBtn) searchBtn.addEventListener('click', triggerSearch);
+
+                    // Category Strip Routing
+                    document.querySelectorAll('.category-pill').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const action = card.dataset.action;
+                            if (action) {
+                                window.parent.postMessage({ type: 'TRIGGER_SUB_ACTION', action }, '*');
+                            }
+                        });
+                    });
+                },
+                refresh: () => {
+                    renderContinueWatching();
+                },
+                handleMediaAction,
+                handleCategoryNavigate,
+                removeProgressItem
+            };
+        })();
+
+        window.addEventListener('message', (event) => {
+            const { type, action } = event.data;
+            if (type === 'TAB_FOCUSED') {
+                HomeTab.refresh();
+            } else if (type === 'SUB_ACTION') {
+                const targetShelf = document.getElementById(`shelf-${action}`) || document.getElementById(`shelf-trending_${action}`);
+                if (targetShelf) {
+                    targetShelf.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Highlight flash effect to draw attention
+                    const scroller = targetShelf.querySelector('.shelf-scroller');
+                    if (scroller) {
+                        scroller.style.transform = 'scale(1.02)';
+                        scroller.style.transition = 'transform 0.4s ease';
+                        setTimeout(() => scroller.style.transform = 'none', 600);
+                    }
+                }
+            }
+        });
+
+        window.onload = HomeTab.init;
+    </script>
+</body>
+</html>
