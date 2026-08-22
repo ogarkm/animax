@@ -110,7 +110,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Animax local tunnel client")
     parser.add_argument(
         "--backend-url",
-        default="https://animax-player.vercel.app",
+        default="https://animax-s21j.onrender.com",
         help="HTTP base URL for the animax-player backend tunnel",
     )
     return parser.parse_args()

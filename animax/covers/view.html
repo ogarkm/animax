@@ -32,8 +32,8 @@
             inset: 0;
             background-size: cover;
             background-position: center;
-            filter: blur(18px) brightness(0.32); /* Reduced blur to preserve high-end artistic shapes */
-            transform: scale(1.1); /* Prevents edge leaks */
+            filter: blur(18px) brightness(0.32);
+            transform: scale(1.1);
             z-index: 1;
             transition: background-image 0.8s var(--ease-out-expo);
         }
@@ -48,7 +48,7 @@
             pointer-events: none;
         }
 
-        /* ── Bottom-Left Info Panel (title + synopsis) ─────────── */
+        /* ── Bottom-Left Info Panel (synopsis) ─────────── */
         .bottom-info-panel {
             position: absolute;
             left: max(4vw, 32px);
@@ -64,27 +64,6 @@
             opacity: 0;
             transform: translateY(16px);
             pointer-events: none;
-        }
-
-        .media-branding {
-            max-width: min(60vw, 340px);
-            margin-bottom: 16px;
-        }
-
-        .media-logo {
-            max-height: 84px;
-            width: auto;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
-        }
-
-        .fallback-title {
-            font-size: clamp(1.5rem, 3.4vw, 2.25rem);
-            font-weight: 800;
-            margin: 0;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
         }
 
         .episode-label {
@@ -109,10 +88,10 @@
             text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
         }
 
-        /* ── Clean Minimalist Atomic Loader ───────────────────── */
+        /* ── Center Loading Wrap ───────────────────── */
         .center-loader-wrap {
             position: absolute;
-            top: 48%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 4;
@@ -121,111 +100,95 @@
             align-items: center;
             justify-content: center;
             transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+            width: 100%;
+            pointer-events: none;
         }
 
         .center-loader-wrap.resolved {
             opacity: 0;
             transform: translate(-50%, -50%) scale(0.95);
-            pointer-events: none;
         }
 
-        .atomic-visualizer {
+        /* ── Linear Logo Wipe Elements ───────────────── */
+        .center-logo-container {
             position: relative;
-            width: 130px;
-            height: 130px;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        /* Extremely subtle backdrop glow */
-        .atomic-ambient-glow {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Clean core nucleus with subtle transform animations */
-        .atomic-nucleus {
-            position: absolute;
-            width: 5px;
-            height: 5px;
-            background: #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-            z-index: 10;
-            animation: nucleus-breathe 2.5s ease-in-out infinite;
-        }
-
-        /* Mathematical 3D Orbit planes */
-        .atomic-orbits {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            perspective: 800px;
-            transform-style: preserve-3d;
-            z-index: 5;
-        }
-
-        .orbit-plane {
-            position: absolute;
+            margin-bottom: 24px;
             width: 100%;
-            height: 100%;
-            transform-style: preserve-3d;
         }
 
-        /* Elegant geometric tilts */
-        .orbit-plane.axis-1 { transform: rotateX(68deg) rotateY(-20deg); }
-        .orbit-plane.axis-2 { transform: rotateX(68deg) rotateY(40deg); }
-        .orbit-plane.axis-3 { transform: rotateX(0deg) rotateY(78deg); }
-
-        .orbit-track {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 50%;
-            transform-style: preserve-3d;
+        .media-logo {
+            max-height: 120px;
+            max-width: min(60vw, 400px);
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
         }
 
-        /* Independent speeds to ensure varied alignment profiles */
-        .orbit-plane.axis-1 .orbit-track { animation: orbit-spin-cw 3.2s linear infinite; }
-        .orbit-plane.axis-2 .orbit-track { animation: orbit-spin-ccw 2.4s linear infinite; }
-        .orbit-plane.axis-3 .orbit-track { animation: orbit-spin-cw 1.8s linear infinite; }
+        .fallback-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            text-align: center;
+        }
 
-        /* Crisp, tiny electron points */
-        .electron {
+        /* Base element at 10% transparency */
+        .logo-base {
+            opacity: 0.1;
+            filter: grayscale(100%);
+        }
+
+        /* Fully visible wipe layer acting as a sweep */
+        .logo-wipe {
             position: absolute;
-            top: 50%;
-            left: 0;
-            width: 3.5px;
-            height: 3.5px;
-            background: #ffffff;
-            border-radius: 50%;
-            margin-top: -1.75px;
-            margin-left: -1.75px;
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* Sharp, invisible line wipe gradient */
+            -webkit-mask-image: linear-gradient(90deg, 
+                transparent 0%, 
+                transparent 33%, 
+                black 34%, 
+                black 66%, 
+                transparent 67%, 
+                transparent 100%
+            );
+            mask-image: linear-gradient(90deg, 
+                transparent 0%, 
+                transparent 33%, 
+                black 34%, 
+                black 66%, 
+                transparent 67%, 
+                transparent 100%
+            );
+            -webkit-mask-size: 300% 100%;
+            mask-size: 300% 100%;
+            animation: linear-wipe-sweep 3s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+        }
+
+        @keyframes linear-wipe-sweep {
+            0% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+            30% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }  /* Sweeps left to right revealing 100% */
+            70% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }  /* Holds visually complete */
+            100% { -webkit-mask-position: 0% 0; mask-position: 0% 0; }   /* Sweeps out right vanishing smoothly */
         }
 
         /* Premium, lightweight status text styling */
         .loader-status-text {
-            margin-top: 16px;
             font-size: 0.813rem; /* 13px */
             font-weight: 500;
-            color: rgba(255, 255, 255, 0.55);
+            color: rgba(255, 255, 255, 0.6);
             letter-spacing: 0.03em;
             text-align: center;
-        }
-
-        /* Canvas cloud for anti-aliased floating dust elements */
-        #particle-cloud {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 1;
+            text-transform: uppercase;
         }
 
         /* ── Embedded Frame Viewport ────────────────────────── */
@@ -279,47 +242,61 @@
             transform: scale(1.05);
         }
 
-        /* ── Error State (rendered in the center loader slot) ──── */
+        /* ── Modernized Error State ────────────────────────── */
         .error-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
             width: max(60vw, 280px);
+            pointer-events: auto; /* Re-enable pointer events for the button */
         }
 
         .error-state .error-icon {
-            color: var(--accent);
-            font-size: 2.75rem;
-            margin-bottom: 14px;
+            color: #ff453a;
+            font-size: 3.5rem;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 12px rgba(255, 69, 58, 0.4));
         }
 
         .error-state h2 {
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             font-weight: 700;
             margin: 0 0 8px;
         }
 
         .error-state p {
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             color: var(--text-secondary, #8E8E93);
-            margin: 0 0 22px;
+            margin: 0 0 24px;
         }
 
-        /* ── Keyframes ──────────────────────────────────────── */
-        @keyframes nucleus-breathe {
-            0%, 100% { transform: scale(0.9); box-shadow: 0 0 6px rgba(255, 255, 255, 0.5); }
-            50% { transform: scale(1.15); box-shadow: 0 0 12px rgba(255, 255, 255, 0.85); }
+        .error-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 28px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            transition: all 0.25s var(--ease-out-expo);
         }
 
-        @keyframes orbit-spin-cw {
-            0% { transform: rotateZ(0deg); }
-            100% { transform: rotateZ(360deg); }
+        .error-action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
 
-        @keyframes orbit-spin-ccw {
-            0% { transform: rotateZ(360deg); }
-            100% { transform: rotateZ(0deg); }
+        .error-action-btn:active {
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -336,45 +313,23 @@
     <!-- Bottom scrim for text legibility -->
     <div class="bottom-scrim"></div>
 
-    <!-- Bottom-Left Title + Synopsis Panel -->
+    <!-- Bottom-Left Synopsis Panel -->
     <div id="bottom-info-panel" class="bottom-info-panel">
-        <div class="media-branding">
-            <div id="branding-target">
-                <!-- Loaded dynamically -->
-            </div>
-        </div>
-
         <div id="episode-info-target">
             <!-- Loaded dynamically -->
         </div>
     </div>
 
-    <!-- Centered Atomic Core Loader -->
+    <!-- Centered Logo Linear Wipe Loader -->
     <div id="center-loader" class="center-loader-wrap">
-        <div class="atomic-visualizer">
-            <!-- Canvas cloud for organic micro-probability particles -->
-            <canvas id="particle-cloud" width="130" height="130"></canvas>
-            <div class="atomic-ambient-glow"></div>
-            <div class="atomic-nucleus"></div>
-
-            <div class="atomic-orbits">
-                <div class="orbit-plane axis-1">
-                    <div class="orbit-track"><div class="electron"></div></div>
-                </div>
-                <div class="orbit-plane axis-2">
-                    <div class="orbit-track"><div class="electron"></div></div>
-                </div>
-                <div class="orbit-plane axis-3">
-                    <div class="orbit-track"><div class="electron"></div></div>
-                </div>
-            </div>
+        <div id="center-logo-target" class="center-logo-container">
+            <!-- Populated via API data -->
         </div>
         <div class="loader-status-text" id="loader-status">Connecting to stream...</div>
     </div>
 
     <!-- Active Media Display Surface -->
     <div id="player-frame-wrapper" class="player-viewport">
-        <!-- Iframe loaded on source resolution -->
         <iframe id="playback-iframe" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
     </div>
 
@@ -418,8 +373,8 @@
         function updateConsoleUI(media) {
             const isMovie = media.type === 'movie' || media.id.startsWith('tm');
             const ambientBg = document.getElementById('ambient-bg-underlay');
-            const brandingTarget = document.getElementById('branding-target');
             const infoTarget = document.getElementById('episode-info-target');
+            const centerLogoTarget = document.getElementById('center-logo-target');
 
             let banner = media.banner_url || media.poster_url || '';
             let labelText = '';
@@ -427,7 +382,6 @@
 
             // Handle series metadata details
             if (!isMovie && media.episodes && media.episodes.length > 0) {
-                // Find episode metadata matching requested sequence number
                 const ep = media.episodes.find(e => e.absolute_number === currentEpisodeNum) || media.episodes[0];
                 if (ep) {
                     banner = ep.thumbnail_url || banner;
@@ -441,12 +395,17 @@
                 ambientBg.style.backgroundImage = `url('${banner}')`;
             }
 
-            // Set Title/Branding
-            brandingTarget.innerHTML = media.clear_logo_url
+            // Build dynamic branding markup for the center wipe loader
+            const logoHTML = media.clear_logo_url
                 ? `<img class="media-logo" src="${media.clear_logo_url}" alt="${media.title}">`
                 : `<h1 class="fallback-title">${media.title}</h1>`;
 
-            // Set Info metadata
+            centerLogoTarget.innerHTML = `
+                <div class="logo-base">${logoHTML}</div>
+                <div class="logo-wipe">${logoHTML}</div>
+            `;
+
+            // Set Info metadata (bottom-left)
             infoTarget.innerHTML = `
                 ${labelText ? `<div class="episode-label">${labelText}</div>` : ''}
                 <p class="episode-synopsis">${synopsisText}</p>
@@ -464,7 +423,7 @@
                     throw new Error("No available streaming sources found.");
                 }
 
-                // Pick best offer (Defaulting to the first available)
+                // Pick best offer
                 const selectedOffer = offers[0];
 
                 // Select external player URL microservice if mapped, otherwise fall back to internal
@@ -495,115 +454,25 @@
             };
         }
 
+        // ── Render Error Interface with Modern Action Styles ────
         function displayErrorState(message) {
             const centerLoader = document.getElementById('center-loader');
             centerLoader.classList.remove('resolved');
+            
             centerLoader.innerHTML = `
                 <div class="error-state">
-                    <div class="error-icon"><i class="ph ph-warning-circle"></i></div>
+                    <div class="error-icon"><i class="ph-fill ph-warning-circle"></i></div>
                     <h2>Playback Failed</h2>
                     <p>${message}</p>
-                    <button class="btn-secondary btn-tactile" onclick="returnToDetails()">
+                    <button class="error-action-btn" onclick="returnToDetails()">
                         <i class="ph ph-arrow-left"></i>
-                        <span>Go Back</span>
+                        <span>Return to Details</span>
                     </button>
                 </div>
             `;
         }
 
-        /* =========================================================================
-           3. FLOATING MICRO-PROBABILITY ENGINE (Canvas Particles)
-           Renders soft-edged, fading quantum cloud dust on high-DPI screens.
-           ========================================================================= */
-        function initAtomicCanvas() {
-            const canvas = document.getElementById('particle-cloud');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const size = 130;
-            const center = size / 2;
-
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = size * dpr;
-            canvas.height = size * dpr;
-            canvas.style.width = `${size}px`;
-            canvas.style.height = `${size}px`;
-            ctx.scale(dpr, dpr);
-
-            const particles = [];
-            const maxParticles = 18;
-
-            class SoftParticle {
-                constructor() {
-                    this.reset();
-                }
-                reset() {
-                    const angle = Math.random() * Math.PI * 2;
-                    const u1 = Math.random();
-                    const u2 = Math.random();
-                    const normalDist = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2);
-                    const distance = Math.abs(normalDist) * 18 + 2;
-
-                    this.x = center + Math.cos(angle) * distance;
-                    this.y = center + Math.sin(angle) * distance;
-                    
-                    // Tiny floating drift vector values
-                    this.vx = (Math.random() - 0.5) * 0.08;
-                    this.vy = (Math.random() - 0.5) * 0.08;
-
-                    this.size = Math.random() * 1.2 + 0.6;
-                    this.alpha = 0;
-                    this.maxAlpha = Math.random() * 0.4 + 0.1;
-                    this.speed = Math.random() * 0.012 + 0.004;
-                    this.state = 'in';
-                }
-                update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-
-                    if (this.state === 'in') {
-                        this.alpha += this.speed;
-                        if (this.alpha >= this.maxAlpha) {
-                            this.alpha = this.maxAlpha;
-                            this.state = 'out';
-                        }
-                    } else {
-                        this.alpha -= this.speed;
-                        if (this.alpha <= 0) {
-                            this.reset();
-                        }
-                    }
-                }
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-                    ctx.fill();
-                }
-            }
-
-            for (let i = 0; i < maxParticles; i++) {
-                particles.push(new SoftParticle());
-                particles[i].alpha = Math.random() * particles[i].maxAlpha;
-                if (Math.random() > 0.5) particles[i].state = 'out';
-            }
-
-            function draw() {
-                if (!document.getElementById('particle-cloud')) return;
-                ctx.clearRect(0, 0, size, size);
-
-                particles.forEach(p => {
-                    p.update();
-                    p.draw();
-                });
-                requestAnimationFrame(draw);
-            }
-            draw();
-        }
-
-        /* =========================================================================
-           4. SMOOTH TELEMETRY LABELS
-           Cycles natural, clear status feedback phases.
-           ========================================================================= */
+        // ── SMOOTH TELEMETRY LABELS ─────────────────────────────
         function initLoaderStatusLoop() {
             const statusEl = document.getElementById('loader-status');
             const phrases = [
@@ -615,17 +484,19 @@
             let idx = 0;
 
             const interval = setInterval(() => {
-                if (!statusEl) { clearInterval(interval); return; }
+                if (!document.body.contains(statusEl)) { 
+                    clearInterval(interval); 
+                    return; 
+                }
                 idx = (idx + 1) % phrases.length;
                 statusEl.innerText = phrases[idx];
-            }, 3000);
+            }, 3500);
         }
 
-        // Initialize script logic
+        // Initialize scripts
         resolveQueryParams();
         fetchConsoleMetadata();
         resolvePlaybackSources();
-        initAtomicCanvas();
         initLoaderStatusLoop();
     </script>
 </body>

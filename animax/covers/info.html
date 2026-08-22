@@ -780,7 +780,7 @@
                 </div>
             `;
 
-            if (media.seasons && media.seasons.length > 0) {
+            if (media.seasons && media.seasons.length > 0 && media.episodes && media.episodes.length > 0) {
                 const selector = document.getElementById('season-dropdown');
                 if (selector) {
                     selector.addEventListener('change', (e) => {
