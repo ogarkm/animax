@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.dialects.postgresql import insert as postgres_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from datetime import datetime, timezone
 
 from app.core.database import get_users_db
@@ -22,8 +23,10 @@ async def save_watch_progress(
     """
     now_iso = datetime.now(timezone.utc).isoformat()
     
-    # SQLite UPSERT statement
-    stmt = insert(WatchProgress).values(
+    insert_for_dialect = (
+        postgres_insert if db.bind.dialect.name == "postgresql" else sqlite_insert
+    )
+    stmt = insert_for_dialect(WatchProgress).values(
         user_id=current_user.id,
         media_id=progress.media_id,
         episode_number=progress.episode_number,
