@@ -12,16 +12,24 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
+def create_database_engine(url: str):
+    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+    return create_engine(url, connect_args=connect_args)
+
+
 # --- Engines ---
-# connect_args={"check_same_thread": False} is required for FastAPI + SQLite
-users_engine = create_engine(settings.USERS_DB_URL, connect_args={"check_same_thread": False})
-mapping_engine = create_engine(settings.MAPPING_DB_URL, connect_args={"check_same_thread": False})
-cache_engine = create_engine(settings.CACHE_DB_URL, connect_args={"check_same_thread": False})
+users_engine = create_database_engine(settings.USERS_DB_URL)
+mapping_engine = create_database_engine(settings.MAPPING_DB_URL)
+cache_engine = create_database_engine(settings.CACHE_DB_URL)
 
 # Attach WAL pragmas
-event.listen(users_engine, 'connect', set_sqlite_pragma)
-event.listen(mapping_engine, 'connect', set_sqlite_pragma)
-event.listen(cache_engine, 'connect', set_sqlite_pragma)
+for engine, url in (
+    (users_engine, settings.USERS_DB_URL),
+    (mapping_engine, settings.MAPPING_DB_URL),
+    (cache_engine, settings.CACHE_DB_URL),
+):
+    if url.startswith("sqlite"):
+        event.listen(engine, 'connect', set_sqlite_pragma)
 
 # --- Session Makers ---
 UsersSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=users_engine)
