@@ -43,7 +43,12 @@ async def sync_fribb_database():
         return
 
     print(f"[Worker] Downloaded {len(data)} anime mappings. Syncing to SQLite...")
-    
+
+    await asyncio.to_thread(_replace_mapping_data, data)
+
+
+def _replace_mapping_data(data: list[dict]) -> None:
+    """Replace the large mapping table without blocking the event loop."""
     # Ensure mapping table schema exists with updated columns
     AnimeMapping.__table__.drop(mapping_engine, checkfirst=True)
     AnimeMapping.__table__.create(mapping_engine, checkfirst=True)
