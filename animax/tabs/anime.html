@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Animax - Anime</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <script src="../static/phosphor.js"></script>
+    <style>
+        /* --- Page Base Override --- */
+        body {
+            background-color: #050505;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 120px; /* Space for mobile tab bar */
+            scroll-behavior: smooth;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* --- Ambient Lighting Effect --- */
+        .ambient-glow {
+            position: fixed;
+            top: -20vh;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 0%, rgba(143, 231, 236, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: -1;
+            filter: blur(60px);
+        }
+
+        /* ==================================================================
+           HERO SECTION — Immersive Cinematic Layout
+           ================================================================== */
+        #hero-container {
+            position: relative;
+            width: 100%;
+            height: 85vh;
+            min-height: 600px;
+            max-height: 900px;
+            background: #050505;
+            overflow: hidden;
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
+
+        .hero-bg-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 20%;
+            filter: brightness(0.65) saturate(1.1);
+            z-index: 1;
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 8s ease-out;
+            opacity: 0;
+            transform: scale(1.05);
+        }
+
+        .hero-bg-layer.active {
+            opacity: 0.85;
+            transform: scale(1);
+        }
+
+        .hero-vignette {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to top, #050505 0%, rgba(5, 5, 5, 0.6) 30%, rgba(5, 5, 5, 0) 70%),
+                linear-gradient(to right, #050505 5%, rgba(5, 5, 5, 0.3) 40%, rgba(5, 5, 5, 0) 100%);
+            z-index: 2;
+        }
+
+        .hero-layout-wrapper {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            display: grid;
+            align-items: end;
+            gap: 40px;
+            padding: 0 6% 12vh 6%;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* --- Cinema Mode (Anime Hub) --- */
+        #hero-container.cinema-mode .hero-layout-wrapper {
+            grid-template-columns: 100%;
+        }
+
+        #hero-container.cinema-mode .book-stack-area {
+            display: none;
+        }
+
+        /* --- Manga Mode --- */
+        #hero-container.manga-mode .hero-layout-wrapper {
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            padding-top: 10vh;
+        }
+
+        #hero-container.manga-mode .book-stack-area {
+            display: flex;
+        }
+
+        /* --- Stack of Book Posters Component --- */
+        .book-stack-area {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            perspective: 1200px;
+            margin-right: 20px;
+        }
+
+        .book-stack-container {
+            position: relative;
+            width: 210px;
+            height: 310px;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .book-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease, z-index 0.6s ease;
+            transform-style: preserve-3d;
+            background: #141418;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .book-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .book-card.prev-card {
+            transform: translate3d(-60px, 0, -100px) rotate(-12deg) scale(0.85);
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        .book-card.active-card {
+            transform: translate3d(0, 0, 20px) rotate(0deg) scale(1.05);
+            z-index: 5;
+            opacity: 1;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(143, 231, 236, 0.2);
+            border-color: rgba(143, 231, 236, 0.4);
+        }
+
+        .book-card.next-card {
+            transform: translate3d(60px, 0, -100px) rotate(12deg) scale(0.85);
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        .top-10-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--brand, #8FE7EC);
+            color: #000;
+            font-weight: 800;
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        /* --- Hero Info Layout --- */
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 650px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes heroTextIn {
+            0% { opacity: 0; transform: translateY(20px); filter: blur(8px); }
+            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        .hero-text-animate {
+            animation: heroTextIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .hero-badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .hero-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.95);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .hero-badge.rating {
+            background: rgba(143, 231, 236, 0.15);
+            border-color: rgba(143, 231, 236, 0.4);
+            color: var(--brand, #8FE7EC);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .hero-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5vw, 4rem);
+            line-height: 1.05;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -0.03em;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            margin: 0;
+        }
+
+        .hero-japanese-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--brand, #8FE7EC);
+            opacity: 0.9;
+            letter-spacing: 0.08em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .hero-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.75);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            max-width: 580px;
+        }
+
+        .hero-btn-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .btn-premium {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-premium.primary {
+            background: #ffffff;
+            color: #050505;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-premium.primary:hover {
+            transform: translateY(-2px);
+            background: var(--brand, #8FE7EC);
+            box-shadow: 0 8px 25px rgba(143, 231, 236, 0.4);
+        }
+
+        .btn-premium.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .btn-premium.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-premium.coming-soon {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .btn-premium.coming-soon:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        .hero-dots {
+            position: absolute;
+            right: 6%;
+            bottom: 40px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .hero-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hero-dot.active {
+            background: var(--brand, #8FE7EC);
+            width: 32px;
+            border-radius: 4px;
+            box-shadow: 0 0 12px rgba(143, 231, 236, 0.6);
+        }
+
+        .availability-notice {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: -8px 6% 32px;
+            padding: 12px 16px;
+            border: 1px solid rgba(143, 231, 236, 0.25);
+            border-radius: 10px;
+            background: rgba(143, 231, 236, 0.07);
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .availability-notice i {
+            color: var(--brand, #8FE7EC);
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .availability-notice strong {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        /* ==================================================================
+           MEDIA SHELVES
+           ================================================================== */
+        .shelf-section {
+            padding: 0 6%;
+            margin-bottom: 48px;
+            position: relative;
+        }
+
+        .shelf-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .shelf-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modern-indicator {
+            width: 4px;
+            height: 0px;
+            background: var(--brand, #8FE7EC);
+            border-radius: 4px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+        }
+
+        .shelf-section:hover .modern-indicator {
+            height: 24px;
+            opacity: 1;
+            box-shadow: 0 0 12px rgba(143, 231, 236, 0.6);
+        }
+
+        .shelf-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin: 0;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .shelf-section:hover .shelf-title {
+            transform: translateX(4px);
+        }
+
+        .shelf-scroller {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 8px 0 24px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth;
+        }
+
+        .shelf-scroller::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* --- WIDE CARDS (Continue Watching) --- */
+        .continue-card {
+            flex: 0 0 280px;
+            height: 157px;
+            background: #101012;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            scroll-snap-align: start;
+        }
+
+        @media (min-width: 769px) {
+            .continue-card { flex: 0 0 320px; height: 180px; }
+        }
+
+        .continue-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: rgba(143, 231, 236, 0.3);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.8), 0 0 20px rgba(143, 231, 236, 0.1);
+        }
+
+        .continue-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .continue-card:hover .continue-thumbnail {
+            transform: scale(1.05);
+        }
+
+        .continue-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .continue-meta-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .continue-title {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .continue-episode {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+
+        .progress-bar-container {
+            width: calc(100% - 32px);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--brand, #8FE7EC);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 8px var(--brand, #8FE7EC);
+        }
+
+        .continue-dismiss {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.2s ease;
+        }
+
+        .continue-card:hover .continue-dismiss {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .continue-dismiss:hover {
+            background: #ffffff;
+            color: #000;
+        }
+
+        .continue-play-trigger {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(143, 231, 236, 0.9);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 20px rgba(143, 231, 236, 0.4);
+            z-index: 5;
+        }
+
+        .continue-card:hover .continue-play-trigger {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* --- STANDARD MEDIA POSTER CARDS --- */
+        .media-card {
+            flex: 0 0 140px;
+            display: flex;
+            max-width: 180px;
+            flex-direction: column;
+            gap: 10px;
+            cursor: pointer;
+            scroll-snap-align: start;
+        }
+
+        @media (min-width: 769px) {
+            .media-card { flex: 0 0 170px; }
+        }
+
+        .media-poster-wrap {
+            position: relative;
+            width: 180px;
+            height: 270px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #101012;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .media-card:hover .media-poster-wrap {
+            transform: translateY(-6px);
+            border-color: rgba(143, 231, 236, 0.4);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(143, 231, 236, 0.15);
+        }
+
+        .media-poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .media-card:hover .media-poster {
+            transform: scale(1.05);
+        }
+
+        .media-badge-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        .media-rating-overlay {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: var(--brand, #8FE7EC);
+            color: #000;
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .media-card-title {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.2s ease;
+        }
+
+        .media-card:hover .media-card-title {
+            color: var(--brand, #8FE7EC);
+        }
+
+        .media-card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* --- Shimmer Skeleton Loader --- */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(20, 20, 24, 0.4) 25%, rgba(40, 40, 48, 0.6) 37%, rgba(20, 20, 24, 0.4) 63%);
+            background-size: 400% 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ==================================================================
+           RELEASE SCHEDULE VIEW
+           ================================================================== */
+        #schedule-view {
+            padding: 56px 6% 60px;
+            max-width: 780px;
+            margin: 0 auto;
+        }
+
+        .schedule-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .schedule-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .schedule-header-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(143, 231, 236, 0.1);
+            border: 1px solid rgba(143, 231, 236, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brand, #8FE7EC);
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .schedule-header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: #ffffff;
+            margin: 0 0 4px 0;
+        }
+
+        .schedule-header p {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* --- Week Nav Controls --- */
+        .sched-week-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .sched-nav-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sched-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .sched-nav-btn.active {
+            background: rgba(143, 231, 236, 0.15);
+            color: var(--brand, #8FE7EC);
+        }
+
+        /* --- Day Switcher --- */
+        .sched-day-switcher {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding-bottom: 4px;
+            margin-bottom: 28px;
+        }
+
+        .sched-day-switcher::-webkit-scrollbar { display: none; }
+
+        .sched-day-chip {
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sched-day-chip:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .sched-day-chip .sched-day-name {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.55);
+        }
+
+        .sched-day-chip .sched-day-date {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .sched-day-chip.active {
+            background: rgba(143, 231, 236, 0.15);
+            border-color: rgba(143, 231, 236, 0.4);
+        }
+
+        .sched-day-chip.active .sched-day-name { color: var(--brand, #8FE7EC); }
+        .sched-day-chip.active .sched-day-date { color: rgba(143, 231, 236, 0.7); }
+
+        .sched-day-chip.is-today .sched-day-name::after {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--brand, #8FE7EC);
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        /* --- Card list --- */
+        .sched-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sched-card {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: #121214;
+            border-radius: 16px;
+            height: 120px;
+            overflow: hidden;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: schedSlideFadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .sched-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            background-color: #18181b;
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 20px 25px -5px rgba(0, 0, 0, 0.5),
+                0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .sched-banner-bg {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 70%;
+            background-size: cover;
+            background-position: center 20%;
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 1) 60%);
+            mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 1) 60%);
+            opacity: 0.15;
+            z-index: 0;
+            pointer-events: none;
+            filter: grayscale(1);
+            transform: scale(1.05);
+            transition:
+                opacity 0.4s ease,
+                filter 0.4s ease,
+                transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .sched-card:hover .sched-banner-bg {
+            opacity: 0.4;
+            filter: grayscale(0);
+            transform: scale(1.1);
+        }
+
+        .sched-poster {
+            height: calc(100% - 24px);
+            width: 72px;
+            object-fit: cover;
+            z-index: 1;
+            border-radius: 8px;
+            margin-left: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            transition: transform 0.3s ease;
+            background: #101012;
+        }
+
+        .sched-card:hover .sched-poster {
+            transform: scale(1.03);
+        }
+
+        .sched-content {
+            z-index: 1;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: calc(100% - 100px);
+        }
+
+        .sched-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #f4f4f5;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .sched-metadata {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        .sched-meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            color: #a1a1aa;
+            font-size: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+
+        .sched-meta-pill i { font-size: 12px; opacity: 0.7; }
+
+        .sched-meta-pill.score {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            border-color: rgba(251, 191, 36, 0.15);
+        }
+        .sched-meta-pill.score i { opacity: 1; }
+
+        .sched-meta-pill.live {
+            color: #050505;
+            background: var(--brand, #8FE7EC);
+            border-color: var(--brand, #8FE7EC);
+            animation: schedLivePulse 1.8s infinite ease-in-out;
+        }
+
+        .sched-loading-text {
+            color: #a1a1aa;
+            font-size: 14px;
+            font-weight: 500;
+            animation: schedTextPulse 1.5s infinite ease-in-out;
+            padding: 24px 0;
+            text-align: center;
+        }
+
+        @keyframes schedSlideFadeUp {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes schedTextPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes schedLivePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(143, 231, 236, 0.5); }
+            50% { box-shadow: 0 0 0 5px rgba(143, 231, 236, 0); }
+        }
+
+        .schedule-empty-day {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .schedule-fallback-notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 20px;
+            border: 1px solid rgba(143, 231, 236, 0.25);
+            border-radius: 14px;
+            background: rgba(143, 231, 236, 0.06);
+        }
+
+        .schedule-fallback-notice i {
+            font-size: 1.4rem;
+            color: var(--brand, #8FE7EC);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .schedule-fallback-notice strong {
+            color: #ffffff;
+            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .schedule-fallback-notice p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 900px) {
+            #hero-container {
+                height: 75vh;
+            }
+
+            #hero-container.manga-mode .hero-layout-wrapper {
+                grid-template-columns: 100%;
+                gap: 24px;
+                padding-top: 18vh;
+                text-align: center;
+            }
+
+            .book-stack-area {
+                margin: 0 auto;
+            }
+
+            .hero-content {
+                align-items: center;
+                gap: 12px;
+            }
+
+            .hero-badge-row { justify-content: center; }
+            .hero-btn-row { width: 100%; justify-content: center; }
+            .hero-dots {
+                position: relative;
+                right: auto;
+                bottom: auto;
+                margin-top: 16px;
+                justify-content: center;
+            }
+            .schedule-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <!-- Cinematic Hero / Anime & Manga Hub -->
+    <section id="hero-container" class="cinema-mode">
+        <img id="backdrop-layer-1" class="hero-bg-layer active" src="" alt="backdrop">
+        <img id="backdrop-layer-2" class="hero-bg-layer" src="" alt="backdrop-incoming">
+
+        <div class="hero-vignette"></div>
+
+        <div class="hero-layout-wrapper">
+            <!-- Left Pane: 3D Stack (Manga Mode only) -->
+            <div class="book-stack-area">
+                <div class="book-stack-container" id="interactive-book-stack">
+                    <div id="stack-prev" class="book-card prev-card"></div>
+                    <div id="stack-active" class="book-card active-card">
+                        <div class="top-10-badge">TOP 10</div>
+                    </div>
+                    <div id="stack-next" class="book-card next-card"></div>
+                </div>
+            </div>
+
+            <!-- Right Pane: Context -->
+            <div class="hero-content" id="hero-text-container">
+                <div class="hero-badge-row" id="hero-badge-container"></div>
+                <div class="hero-title-group">
+                    <h1 class="hero-title" id="hero-main-title">Loading Spotlight...</h1>
+                    <span class="hero-japanese-title" id="hero-sub-title"></span>
+                </div>
+                <p class="hero-description" id="hero-desc"></p>
+
+                <div class="hero-btn-row">
+                    <a id="hero-play-btn" class="btn-premium primary" aria-disabled="false">
+                        <i class="ph-fill ph-play"></i> Watch Now
+                    </a>
+                    <a id="hero-detail-btn" class="btn-premium secondary">
+                        <i class="ph ph-info"></i> Details
+                    </a>
+                </div>
+
+                <div class="hero-dots" id="hero-dots-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <aside class="availability-notice" role="status" id="availability-notice">
+        <i class="ph ph-info"></i>
+        <span><strong>Anime and manga playback are coming soon.</strong> You can still explore the catalog and view details.</span>
+    </aside>
+
+    <!-- Continue Watching Shelf -->
+    <section class="shelf-section" id="continue-watching-section" style="display: none;">
+        <div class="shelf-header">
+            <div class="shelf-title-wrap">
+                <div class="modern-indicator"></div>
+                <h2 class="shelf-title">Continue Watching</h2>
+            </div>
+            <a class="shelf-link" id="clear-progress-btn">
+                Clear All
+            </a>
+        </div>
+        <div class="shelf-scroller" id="continue-scroller">
+            <!-- Rendered dynamically -->
+        </div>
+    </section>
+
+    <!-- Dynamic API Media Shelves (Anime Hub / Manga Hub) -->
+    <main id="shelves-mount"></main>
+
+    <!-- Release Schedule View -->
+    <section id="schedule-view" style="display: none;">
+        <div class="schedule-header">
+            <div class="schedule-header-left">
+                <div class="schedule-header-icon"><i class="ph-fill ph-calendar"></i></div>
+                <div>
+                    <h1>Release Schedule</h1>
+                    <p>This week's anime episode releases, day by day.</p>
+                </div>
+            </div>
+            <!-- Week Navigation Controls -->
+            <div class="sched-week-nav">
+                <button class="sched-nav-btn" id="sched-prev-week-btn">
+                    <i class="ph ph-caret-left"></i> Prev
+                </button>
+                <button class="sched-nav-btn active" id="sched-this-week-btn">
+                    This Week
+                </button>
+                <button class="sched-nav-btn" id="sched-next-week-btn">
+                    Next <i class="ph ph-caret-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="sched-day-switcher" id="schedule-day-switcher">
+            <!-- Day chips rendered dynamically -->
+        </div>
+        <div class="sched-list" id="schedule-days-mount">
+            <!-- Cards for the active day, rendered dynamically -->
+        </div>
+    </section>
+
+    <script src="../js/api.js?v=1.0.1"></script>
+    <script>
+        const AnimeTab = (function() {
+            let activeSlideIndex = 0;
+            let slideInterval = null;
+            let rawApiPayload = null;
+            let spotlightList = [];
+            let activeBgLayer = 1;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedMode = urlParams.get('mode');
+            const activeMode = requestedMode === 'manga' ? 'manga'
+                              : requestedMode === 'schedule' ? 'schedule'
+                              : 'anime';
+            const catalogType = activeMode === 'manga' ? 'manga' : 'anime';
+
+            function getJapaneseTitle(title) {
+                const norm = title.toLowerCase();
+                if (norm.includes("jujutsu kaisen")) return "呪術廻戦";
+                if (norm.includes("chainsaw man")) return "チェンソーマン";
+                if (norm.includes("attack on titan") || norm.includes("shingeki")) return "進撃の巨人";
+                if (norm.includes("demon slayer") || norm.includes("kimetsu")) return "鬼滅の刃";
+                if (norm.includes("one piece")) return "ワンピース";
+                if (norm.includes("naruto")) return "ナルト";
+                if (norm.includes("bleach")) return "ブリーチ";
+                if (norm.includes("monster")) return "モンスター";
+                return "特別セレクション";
+            }
+
+            // --- A. Spotlight Carousel (Anime Hub / Manga Hub) ---
+            function setupCarousel(spotlightItems, allData) {
+                let spotlight = [];
+
+                // 1. Check if backend provided a direct spotlight
+                if (Array.isArray(spotlightItems) && spotlightItems.length > 0) {
+                    spotlight = spotlightItems.filter(item => item.type === catalogType);
+                }
+
+                // 2. Fallback: Pool from trending/popular shelves of the active catalog type
+                if (spotlight.length === 0 && allData) {
+                    Object.entries(allData).forEach(([key, items]) => {
+                        if (key.toLowerCase().includes(catalogType) && Array.isArray(items)) {
+                            spotlight = spotlight.concat(items);
+                        }
+                    });
+                }
+
+                // Deduplicate & enforce valid banners
+                const seenIds = new Set();
+                spotlightList = spotlight.filter(item => {
+                    if (!item || !item.id || seenIds.has(item.id)) return false;
+                    seenIds.add(item.id);
+                    return true;
+                }).slice(0, 6);
+
+                activeSlideIndex = 0;
+                renderActiveSlide();
+                renderCarouselDots();
+                setupTouchGestures();
+                startAutoSlide();
+            }
+
+            // --- C. Anime Hub / Manga Hub Shelves ---
+            async function buildCatalogShelves() {
+                const mount = document.getElementById('shelves-mount');
+                mount.innerHTML = '';
+
+                for (let i = 0; i < 3; i++) {
+                    mount.appendChild(createShelfSkeleton());
+                }
+
+                try {
+                    const endpoint = catalogType === 'anime' ? '/anime' : '/home';
+                    const data = await window.AnimaxAPI.get(endpoint);
+                    rawApiPayload = data;
+                    mount.innerHTML = '';
+
+                    if (data && Object.keys(data).length > 0) {
+                        // Pass both spotlight and full payload for robust carousel building
+                        setupCarousel(data.spotlight || [], data);
+
+                        let hasShelf = false;
+                        Object.entries(data).forEach(([key, items]) => {
+                            // Don't render the spotlight array as a regular shelf
+                            if (key === 'spotlight' || !Array.isArray(items) || items.length === 0) return;
+                            if (!key.toLowerCase().includes(catalogType)) return;
+                            
+                            renderCategoryShelf(key, items, mount);
+                            hasShelf = true;
+                        });
+
+                        if (!hasShelf) mount.insertAdjacentHTML('beforeend', emptyStateHTML());
+                    } else {
+                        throw new Error("Empty response");
+                    }
+
+                } catch (err) {
+                    console.warn("[Animax Anime] Fetch error:", err);
+                    mount.innerHTML = '';
+                    mount.insertAdjacentHTML('beforeend', emptyStateHTML());
+                }
+            }
+
+            function crossFadeBackdrop(newUrl) {
+                const layer1 = document.getElementById('backdrop-layer-1');
+                const layer2 = document.getElementById('backdrop-layer-2');
+
+                if (activeBgLayer === 1) {
+                    layer2.src = newUrl;
+                    layer2.classList.add('active');
+                    layer1.classList.remove('active');
+                    activeBgLayer = 2;
+                } else {
+                    layer1.src = newUrl;
+                    layer1.classList.add('active');
+                    layer2.classList.remove('active');
+                    activeBgLayer = 1;
+                }
+            }
+
+            function renderActiveSlide() {
+                if (!spotlightList.length) return;
+
+                const item = spotlightList[activeSlideIndex];
+                const heroContainer = document.getElementById('hero-container');
+                const textContainer = document.getElementById('hero-text-container');
+
+                const isMangaMode = catalogType === 'manga' || item.type === 'manga';
+                heroContainer.className = isMangaMode ? 'manga-mode' : 'cinema-mode';
+
+                const mainCover = item.banner_url || item.poster_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=800&q=80";
+                crossFadeBackdrop(mainCover);
+
+                if (isMangaMode) {
+                    const prevItem = spotlightList[(activeSlideIndex - 1 + spotlightList.length) % spotlightList.length];
+                    const nextItem = spotlightList[(activeSlideIndex + 1) % spotlightList.length];
+
+                    const prevCover = prevItem.poster_url || prevItem.banner_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=400&q=80";
+                    const nextCover = nextItem.poster_url || nextItem.banner_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=400&q=80";
+
+                    document.getElementById('stack-prev').innerHTML = `<img src="${prevCover}" alt="Previous">`;
+                    document.getElementById('stack-active').innerHTML = `
+                        <img src="${mainCover}" alt="Current">
+                        <div class="top-10-badge">TOP 10</div>
+                    `;
+                    document.getElementById('stack-next').innerHTML = `<img src="${nextCover}" alt="Next">`;
+                }
+
+                textContainer.classList.remove('hero-text-animate');
+                void textContainer.offsetWidth;
+                textContainer.classList.add('hero-text-animate');
+
+                document.getElementById('hero-main-title').innerText = item.title;
+
+                const subTitleEl = document.getElementById('hero-sub-title');
+                subTitleEl.innerText = getJapaneseTitle(item.title);
+                subTitleEl.style.display = '';
+
+                document.getElementById('hero-desc').innerText = item.description || `Explore this top-tier visual masterpiece on Animax. Featuring gorgeous hand-drawn elements, optimized pacing, and emotional character arcs.`;
+
+                const ratingText = item.rating ? item.rating.toFixed(1) : "8.9";
+                const badgeContainer = document.getElementById('hero-badge-container');
+                badgeContainer.innerHTML = `
+                    <span class="hero-badge rating"><i class="ph-fill ph-star"></i> ${ratingText}</span>
+                    <span class="hero-badge">${item.type || (isMangaMode ? 'Manga' : 'Anime')}</span>
+                    ${item.release_year ? `<span class="hero-badge">${item.release_year}</span>` : '<span class="hero-badge">2026</span>'}
+                `;
+
+                const playButton = document.getElementById('hero-play-btn');
+                playButton.classList.add('coming-soon');
+                playButton.setAttribute('aria-disabled', 'true');
+                playButton.innerHTML = '<i class="ph ph-clock"></i> Coming soon...';
+                playButton.onclick = (event) => event.preventDefault();
+                document.getElementById('hero-detail-btn').onclick = () => handleMediaAction(item.id, 'DETAIL');
+
+                const dots = document.querySelectorAll('.hero-dot');
+                dots.forEach((dot, idx) => {
+                    if (idx === activeSlideIndex) dot.classList.add('active');
+                    else dot.classList.remove('active');
+                });
+            }
+
+            function renderCarouselDots() {
+                const dotsContainer = document.getElementById('hero-dots-container');
+                dotsContainer.innerHTML = '';
+
+                spotlightList.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = `hero-dot ${index === 0 ? 'active' : ''}`;
+                    dot.addEventListener('click', () => {
+                        activeSlideIndex = index;
+                        renderActiveSlide();
+                        startAutoSlide();
+                    });
+                    dotsContainer.appendChild(dot);
+                });
+            }
+
+            function shiftSlide(direction) {
+                if (!spotlightList.length) return;
+                activeSlideIndex = (activeSlideIndex + direction + spotlightList.length) % spotlightList.length;
+                renderActiveSlide();
+            }
+
+            function startAutoSlide() {
+                clearInterval(slideInterval);
+                slideInterval = setInterval(() => {
+                    shiftSlide(1);
+                }, 8000);
+            }
+
+            function setupTouchGestures() {
+                const stackContainer = document.getElementById('interactive-book-stack');
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                stackContainer.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].clientX;
+                }, { passive: true });
+
+                stackContainer.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].clientX;
+                    const diff = touchStartX - touchEndX;
+
+                    if (Math.abs(diff) > 40) {
+                        if (diff > 0) shiftSlide(1);
+                        else shiftSlide(-1);
+                        startAutoSlide();
+                    }
+                }, { passive: true });
+
+                document.getElementById('stack-prev').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    shiftSlide(-1);
+                    startAutoSlide();
+                });
+                document.getElementById('stack-next').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    shiftSlide(1);
+                    startAutoSlide();
+                });
+            }
+
+            // --- B. Continue Watching ---
+            function renderContinueWatching() {
+                const section = document.getElementById('continue-watching-section');
+                const scroller = document.getElementById('continue-scroller');
+
+                const progressDataRaw = localStorage.getItem('animax_local_progress');
+                if (!progressDataRaw) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    const progressList = JSON.parse(progressDataRaw);
+                    if (!progressList || Object.keys(progressList).length === 0) {
+                        section.style.display = 'none';
+                        return;
+                    }
+
+                    scroller.innerHTML = '';
+                    section.style.display = 'block';
+
+                    const sortedItems = Object.values(progressList).sort((a, b) => {
+                        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+                    });
+
+                    sortedItems.forEach(item => {
+                        const progressPct = Math.min(100, Math.round((item.timestamp / item.duration) * 100)) || 0;
+                        const card = document.createElement('div');
+                        card.className = 'continue-card';
+
+                        card.innerHTML = `
+                            <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80'}" class="continue-thumbnail" alt="${item.title}">
+                            <div class="continue-dismiss" onclick="AnimeTab.removeProgressItem(event, '${item.media_id}')">
+                                <i class="ph ph-x"></i>
+                            </div>
+                            <div class="continue-play-trigger" onclick="AnimeTab.handleMediaAction('${item.media_id}', 'PLAY', ${item.episode_number})">
+                                <i class="ph-fill ph-play"></i>
+                            </div>
+                            <div class="continue-overlay" onclick="AnimeTab.handleMediaAction('${item.media_id}', 'DETAIL')">
+                                <div class="continue-meta-info">
+                                    <h4 class="continue-title">${item.title}</h4>
+                                    <span class="continue-episode">Episode ${item.episode_number}</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-fill" style="width: ${progressPct}%"></div>
+                            </div>
+                        `;
+                        scroller.appendChild(card);
+                    });
+                } catch (e) {
+                    console.error("Failed to render watch progress shelf:", e);
+                    section.style.display = 'none';
+                }
+            }
+
+            function removeProgressItem(event, mediaId) {
+                event.stopPropagation();
+                try {
+                    const progressDataRaw = localStorage.getItem('animax_local_progress');
+                    if (progressDataRaw) {
+                        const data = JSON.parse(progressDataRaw);
+                        delete data[mediaId];
+                        localStorage.setItem('animax_local_progress', JSON.stringify(data));
+
+                        window.parent.postMessage({ type: 'SHOW_TOAST', message: 'Item removed from watch history', icon: 'ph-trash' }, '*');
+                        renderContinueWatching();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            function clearAllProgress() {
+                localStorage.removeItem('animax_local_progress');
+                window.parent.postMessage({ type: 'SHOW_TOAST', message: 'Watch history cleared', icon: 'ph-check-circle' }, '*');
+                renderContinueWatching();
+            }
+
+            // --- C. Anime Hub / Manga Hub Shelves ---
+            function emptyStateHTML() {
+                const label = catalogType === 'manga' ? 'manga' : 'anime';
+                return `
+                    <div class="schedule-fallback-notice" style="margin: 0 6%;">
+                        <i class="ph ph-compass"></i>
+                        <div>
+                            <strong>No ${label} titles yet.</strong>
+                            <p>Check back soon as the catalog grows.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async function buildCatalogShelves() {
+                const mount = document.getElementById('shelves-mount');
+                mount.innerHTML = '';
+
+                for (let i = 0; i < 3; i++) {
+                    mount.appendChild(createShelfSkeleton());
+                }
+
+                try {
+                    const endpoint = catalogType === 'anime'
+                        ? '/anime?sort=POPULAR_DESC&page=1'
+                        : '/home';
+                    const data = await window.AnimaxAPI.get(endpoint);
+                    rawApiPayload = data;
+                    mount.innerHTML = '';
+
+                    if (data && Object.keys(data).length > 0) {
+                        const spotlightItems = data.spotlight || [];
+                        setupCarousel(spotlightItems.length ? spotlightItems : Object.values(data)[0]);
+
+                        let hasShelf = false;
+                        Object.entries(data).forEach(([key, items]) => {
+                            if (key === 'spotlight' || !Array.isArray(items) || items.length === 0) return;
+                            if (!key.toLowerCase().includes(catalogType)) return;
+                            renderCategoryShelf(key, items, mount);
+                            hasShelf = true;
+                        });
+
+                        if (!hasShelf) mount.insertAdjacentHTML('beforeend', emptyStateHTML());
+                    } else {
+                        throw new Error("Empty response");
+                    }
+
+                } catch (err) {
+                    console.warn("[Animax Anime] Fetch error, utilizing fallback database.", err);
+                    mount.innerHTML = '';
+
+                    let flatItems = [];
+                    let hasShelf = false;
+                    Object.entries(FALLBACK_DATABASE).forEach(([key, items]) => {
+                        if (!Array.isArray(items) || items.length === 0) return;
+                        if (key !== catalogType) return;
+
+                        flatItems = flatItems.concat(items);
+                        renderCategoryShelf(key, items, mount);
+                        hasShelf = true;
+                    });
+
+                    if (!hasShelf) mount.insertAdjacentHTML('beforeend', emptyStateHTML());
+                    setupCarousel(flatItems);
+                }
+            }
+
+            function renderCategoryShelf(key, items, container) {
+                if (!items || items.length === 0) return;
+
+                const mount = container || document.getElementById('shelves-mount');
+                const formattedTitle = key
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase());
+
+                const section = document.createElement('section');
+                section.className = 'shelf-section';
+                section.id = `shelf-${key}`;
+
+                const shelfHeader = `
+                    <div class="shelf-header">
+                        <div class="shelf-title-wrap">
+                            <div class="modern-indicator"></div>
+                            <h2 class="shelf-title">${formattedTitle}</h2>
+                        </div>
+                    </div>
+                `;
+
+                const scroller = document.createElement('div');
+                scroller.className = 'shelf-scroller';
+
+                items.forEach(item => {
+                    const ratingVal = item.rating ? item.rating.toFixed(1) : "N/A";
+                    const poster = item.poster_url || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=400&q=80";
+
+                    const card = document.createElement('div');
+                    card.className = 'media-card';
+                    card.onclick = () => handleMediaAction(item.id, 'DETAIL');
+                    card.innerHTML = `
+                        <div class="media-poster-wrap">
+                            <img src="${poster}" class="media-poster" alt="${item.title}" loading="lazy">
+                            <span class="media-badge-overlay">${item.type}</span>
+                            <span class="media-rating-overlay">
+                                <i class="ph-fill ph-star"></i> ${ratingVal}
+                            </span>
+                        </div>
+                        <h4 class="media-card-title">${item.title}</h4>
+                        <div class="media-card-meta">
+                            <span>${item.release_year || '2026'}</span>
+                            <span><i class="ph ph-clock"></i> Sub/Dub</span>
+                        </div>
+                    `;
+                    scroller.appendChild(card);
+                });
+
+                section.innerHTML = shelfHeader;
+                section.appendChild(scroller);
+                mount.appendChild(section);
+            }
+
+            function createShelfSkeleton() {
+                const section = document.createElement('section');
+                section.className = 'shelf-section';
+                section.innerHTML = `
+                    <div class="shelf-header">
+                        <div class="shelf-title-wrap">
+                            <div class="modern-indicator"></div>
+                            <div style="width: 150px; height: 24px; border-radius: 6px;" class="skeleton"></div>
+                        </div>
+                    </div>
+                    <div class="shelf-scroller">
+                        ${Array(6).fill().map(() => `
+                            <div class="media-card">
+                                <div class="media-poster-wrap skeleton"></div>
+                                <div style="width: 90%; height: 14px; border-radius: 4px;" class="skeleton"></div>
+                                <div style="width: 60%; height: 12px; border-radius: 4px;" class="skeleton"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                return section;
+            }
+
+            function handleMediaAction(mediaId, actionType, absoluteEpisodeNum = 1) {
+                if (actionType === 'PLAY') {
+                    window.parent.postMessage({
+                        type: 'OPEN_COVER',
+                        url: `/covers/info.html?id=${mediaId}?play=true`,
+                        fullscreen: false
+                    }, '*');
+                } else if (actionType === 'DETAIL') {
+                    window.parent.postMessage({
+                        type: 'OPEN_COVER',
+                        url: `/covers/info.html?id=${mediaId}`,
+                        fullscreen: false
+                    }, '*');
+                }
+            }
+
+            // ==================================================================
+            // D. RELEASE SCHEDULE (Upgraded: timezone + week_offset aware)
+            // ==================================================================
+            const SCHED_LIVE_WINDOW_SEC = 25 * 60; // "LIVE" for 25 min after air
+
+            let scheduleEntries = [];
+            let scheduleActiveDayKey = null;
+            let scheduleTickHandle = null;
+            let currentWeekOffset = 0;
+
+            // Detect user's exact system timezone (e.g. "America/Chicago")
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+            function schedDayKey(d) {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+
+            // Calculates the 7 days (Monday - Sunday) for any given week offset
+            function getWeekDates(weekOffset = 0) {
+                const now = new Date();
+                const day = now.getDay(); // 0 is Sunday, 1 is Monday...
+                const diffToMonday = (day === 0 ? -6 : 1) - day;
+                
+                const monday = new Date(now);
+                monday.setDate(now.getDate() + diffToMonday + (weekOffset * 7));
+                monday.setHours(0, 0, 0, 0);
+
+                const weekDays = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + i);
+                    weekDays.push(d);
+                }
+                return weekDays;
+            }
+
+            async function buildScheduleView(weekOffset = 0) {
+                currentWeekOffset = weekOffset;
+                updateWeekNavButtons();
+
+                const mount = document.getElementById('schedule-days-mount');
+                const switcherMount = document.getElementById('schedule-day-switcher');
+                mount.innerHTML = `<div class="sched-loading-text">Loading episodes for this week...</div>`;
+                switcherMount.innerHTML = '';
+
+                try {
+                    // Call backend with week_offset and localized user timezone
+                    const endpoint = `/schedule?week_offset=${currentWeekOffset}&tz=${encodeURIComponent(userTimezone)}`;
+                    const data = await window.AnimaxAPI.get(endpoint);
+                    let nextEntries = [];
+
+                    if (Array.isArray(data)) {
+                        nextEntries = data;
+                    } else if (data && typeof data === 'object') {
+                        // Flattens the { monday: [...], tuesday: [...] } map
+                        nextEntries = Object.values(data).filter(Array.isArray).flat();
+                    }
+
+                    if (nextEntries.length > 0) {
+                        scheduleEntries = nextEntries;
+                        renderScheduleDaySwitcher();
+                        renderScheduleActiveDay();
+                        
+                        if (scheduleTickHandle) clearInterval(scheduleTickHandle);
+                        scheduleTickHandle = setInterval(renderScheduleActiveDay, 60000);
+                    } else {
+                        renderScheduleEmptyState();
+                    }
+                } catch (err) {
+                    console.warn("[Animax Anime] Schedule fetch error.", err);
+                    renderScheduleEmptyState();
+                }
+            }
+
+            function updateWeekNavButtons() {
+                const thisWeekBtn = document.getElementById('sched-this-week-btn');
+                if (thisWeekBtn) {
+                    if (currentWeekOffset === 0) {
+                        thisWeekBtn.classList.add('active');
+                        thisWeekBtn.innerText = 'This Week';
+                    } else if (currentWeekOffset > 0) {
+                        thisWeekBtn.classList.remove('active');
+                        thisWeekBtn.innerText = `+${currentWeekOffset} Weeks`;
+                    } else {
+                        thisWeekBtn.classList.remove('active');
+                        thisWeekBtn.innerText = `${currentWeekOffset} Weeks`;
+                    }
+                }
+            }
+
+            function renderScheduleDaySwitcher() {
+                const switcherMount = document.getElementById('schedule-day-switcher');
+                const weekDates = getWeekDates(currentWeekOffset);
+                const todayKey = schedDayKey(new Date());
+
+                const chips = weekDates.map(d => {
+                    const key = schedDayKey(d);
+                    const isToday = key === todayKey;
+                    return {
+                        key: key,
+                        label: isToday ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short' }),
+                        dateLabel: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                        isToday: isToday
+                    };
+                });
+
+                const weekKeys = chips.map(c => c.key);
+                
+                // If the currently selected day isn't in this week, default to Today (if within week) or Monday
+                if (!scheduleActiveDayKey || !weekKeys.includes(scheduleActiveDayKey)) {
+                    scheduleActiveDayKey = weekKeys.includes(todayKey) ? todayKey : weekKeys[0];
+                }
+
+                switcherMount.innerHTML = chips.map(c => `
+                    <div class="sched-day-chip${c.key === scheduleActiveDayKey ? ' active' : ''}${c.isToday ? ' is-today' : ''}"
+                         data-day-key="${c.key}">
+                        <span class="sched-day-name">${c.label}</span>
+                        <span class="sched-day-date">${c.dateLabel}</span>
+                    </div>
+                `).join('');
+
+                switcherMount.querySelectorAll('.sched-day-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        scheduleActiveDayKey = chip.dataset.dayKey;
+                        switcherMount.querySelectorAll('.sched-day-chip').forEach(c => c.classList.remove('active'));
+                        chip.classList.add('active');
+                        renderScheduleActiveDay();
+                    });
+                });
+            }
+
+            function schedRelativeBadge(airingAt) {
+                const diff = airingAt - (Date.now() / 1000); // seconds until airing
+
+                if (diff <= 0 && diff > -SCHED_LIVE_WINDOW_SEC) {
+                    return { text: 'LIVE', cls: 'live' };
+                }
+                if (diff > 0 && diff < 3600) {
+                    return { text: `in ${Math.max(1, Math.round(diff / 60))}m`, cls: '' };
+                }
+                if (diff > 0 && diff < 86400) {
+                    return { text: `in ${Math.round(diff / 3600)}h`, cls: '' };
+                }
+                
+                // Localized clock time
+                const d = new Date(airingAt * 1000);
+                return { text: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }), cls: '' };
+            }
+
+            function renderScheduleActiveDay() {
+                const mount = document.getElementById('schedule-days-mount');
+                const dayEntries = scheduleEntries
+                    .filter(item => {
+                        const itemDayKey = schedDayKey(new Date(item.airing_at * 1000));
+                        return itemDayKey === scheduleActiveDayKey;
+                    })
+                    .sort((a, b) => a.airing_at - b.airing_at);
+
+                if (!dayEntries.length) {
+                    mount.innerHTML = `<div class="schedule-empty-day">Nothing airing this day, as far as Animax can tell.</div>`;
+                    return;
+                }
+
+                mount.innerHTML = dayEntries.map((item, index) => {
+                    const badge = schedRelativeBadge(item.airing_at);
+                    const banner = item.banner_url || item.poster_url || '';
+                    const poster = item.poster_url || 'https://images.unsplash.com/photo-1541562232579-512a21360020?w=200&q=80';
+                    return `
+                        <div class="sched-card" style="animation-delay: ${index * 0.08}s"
+                             onclick="AnimeTab.handleMediaAction('${item.id}', 'DETAIL')">
+                            <div class="sched-banner-bg" style="background-image: url('${banner}')"></div>
+                            <img class="sched-poster" src="${poster}" alt="${item.title}">
+                            <div class="sched-content">
+                                <div class="sched-title">${item.title}</div>
+                                <div class="sched-metadata">
+                                    ${item.episode ? `<span class="sched-meta-pill">EP ${item.episode}</span>` : ''}
+                                    <span class="sched-meta-pill ${badge.cls}">${badge.text}</span>
+                                    ${item.rating ? `<span class="sched-meta-pill score"><i class="ph-fill ph-star"></i> ${item.rating.toFixed(1)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function renderScheduleEmptyState() {
+                document.getElementById('schedule-day-switcher').innerHTML = '';
+                document.getElementById('schedule-days-mount').innerHTML = `
+                    <div class="schedule-fallback-notice">
+                        <i class="ph ph-calendar-x"></i>
+                        <div>
+                            <strong>No schedule entries found for this week.</strong>
+                            <p>Try switching to another week or check back later.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function setupScheduleNavControls() {
+                const prevBtn = document.getElementById('sched-prev-week-btn');
+                const thisBtn = document.getElementById('sched-this-week-btn');
+                const nextBtn = document.getElementById('sched-next-week-btn');
+
+                if (prevBtn) {
+                    prevBtn.onclick = () => buildScheduleView(currentWeekOffset - 1);
+                }
+                if (thisBtn) {
+                    thisBtn.onclick = () => buildScheduleView(0);
+                }
+                if (nextBtn) {
+                    nextBtn.onclick = () => buildScheduleView(currentWeekOffset + 1);
+                }
+            }
+
+            return {
+                init: () => {
+                    if (activeMode === 'schedule') {
+                        document.getElementById('hero-container').style.display = 'none';
+                        document.getElementById('availability-notice').style.display = 'none';
+                        document.getElementById('continue-watching-section').style.display = 'none';
+                        document.getElementById('shelves-mount').style.display = 'none';
+                        document.getElementById('schedule-view').style.display = 'block';
+                        
+                        setupScheduleNavControls();
+                        buildScheduleView(0);
+                    } else {
+                        document.getElementById('schedule-view').style.display = 'none';
+                        buildCatalogShelves();
+                        renderContinueWatching();
+
+                        const clearBtn = document.getElementById('clear-progress-btn');
+                        if (clearBtn) {
+                            clearBtn.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                clearAllProgress();
+                            });
+                        }
+                    }
+                },
+                refresh: () => {
+                    if (activeMode !== 'schedule') renderContinueWatching();
+                },
+                handleMediaAction,
+                removeProgressItem
+            };
+        })();
+
+        window.addEventListener('message', (event) => {
+            const { type } = event.data;
+            if (type === 'TAB_FOCUSED') {
+                AnimeTab.refresh();
+            }
+        });
+
+        window.onload = AnimeTab.init;
+    </script>
+</body>
+</html>

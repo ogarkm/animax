@@ -1099,48 +1099,32 @@
                 let spotlight = [];
 
                 if (activeMode) {
-                    spotlight = items.filter(item => {
-                        if (activeMode === 'movies' && item.type === 'movie') return true;
-                        if (activeMode === 'tv' && (item.type === 'tv' || item.type === 'tv_shows')) return true;
-                        if (activeMode === 'anime' && item.type === 'anime') return true;
-                        if (activeMode === 'manga' && item.type === 'manga') return true;
-                        return false;
-                    });
+                    const targetType = activeMode === 'tv' ? 'tv' : activeMode.replace(/s$/, ''); // movies -> movie, tv -> tv
+                    
+                    // First try pulling from the spotlight payload
+                    spotlight = (items || []).filter(item => item.type === targetType);
 
-                    if (spotlight.length === 0 && rawApiPayload) {
-                        Object.entries(rawApiPayload).forEach(([shelfName, categoryItems]) => {
-                            if (Array.isArray(categoryItems)) {
-                                const match = categoryItems.filter(item => {
-                                    if (activeMode === 'movies' && item.type === 'movie') return true;
-                                    if (activeMode === 'tv' && (item.type === 'tv' || item.type === 'tv_shows')) return true;
-                                    if (activeMode === 'anime' && item.type === 'anime') return true;
-                                    if (activeMode === 'manga' && item.type === 'manga') return true;
-                                    return false;
-                                });
-                                spotlight = spotlight.concat(match);
+                    // If filtered spotlight has fewer than 5 items, supplement from matching trending/popular shelves
+                    if (spotlight.length < 5 && rawApiPayload) {
+                        Object.entries(rawApiPayload).forEach(([key, shelfItems]) => {
+                            if (key.includes(targetType) && Array.isArray(shelfItems)) {
+                                spotlight = spotlight.concat(shelfItems);
                             }
                         });
                     }
-
-                    const uniqueIds = new Set();
-                    spotlight = spotlight.filter(item => {
-                        if (!uniqueIds.has(item.id)) {
-                            uniqueIds.add(item.id);
-                            return true;
-                        }
-                        return false;
-                    });
-                }
-
-                if (spotlight.length === 0) {
-                    spotlight = items.slice(0, 5);
                 } else {
-                    spotlight = spotlight.slice(0, 5);
+                    spotlight = items || [];
                 }
 
-                spotlightList = spotlight;
-                activeSlideIndex = 0;
+                // Deduplicate and cap at 6 slides
+                const seenIds = new Set();
+                spotlightList = spotlight.filter(item => {
+                    if (!item || !item.id || seenIds.has(item.id)) return false;
+                    seenIds.add(item.id);
+                    return true;
+                }).slice(0, 6);
 
+                activeSlideIndex = 0;
                 renderActiveSlide();
                 renderCarouselDots();
                 setupTouchGestures();

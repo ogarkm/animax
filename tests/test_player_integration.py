@@ -17,6 +17,13 @@ class PlayerIntegrationTests(unittest.TestCase):
         resolved_url = pp._url_for_token(token)
         self.assertEqual(resolved_url, test_url)
 
+    def test_token_retrieval_survives_instance_local_cache_loss(self):
+        test_url = "https://cdn.example.com/hls/live/segment.m4s?token=abc"
+        token = pp.register_stream(test_url)
+        pp.url_tokens.clear()
+        pp.reverse_tokens.clear()
+        self.assertEqual(pp._url_for_token(token), test_url)
+
     def test_m3u8_rewriting(self):
         base_url = "https://cdn.example.com/hls/live/index.m3u8"
         token = pp.register_stream(base_url)

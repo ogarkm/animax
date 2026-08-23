@@ -48,13 +48,17 @@ async def sync_fribb_database():
 
 
 def _replace_mapping_data(data: list[dict]) -> None:
-    """Replace the large mapping table without blocking the event loop."""
-    # Ensure mapping table schema exists with updated columns
-    AnimeMapping.__table__.drop(mapping_engine, checkfirst=True)
-    AnimeMapping.__table__.create(mapping_engine, checkfirst=True)
+    """Replace the large mapping table without blocking the event loop.
 
+    Dropping and recreating the table is safe for SQLite, but it is brittle for
+    Postgres/other backends and triggers the prepared-statement errors seen in
+    production. Instead we do a full table clear and a fresh insert batch.
+    """
     db: Session = MappingSessionLocal()
     try:
+        db.execute(delete(AnimeMapping))
+        db.commit()
+
         bulk_objects = []
         for item in data:
             mal_id = _to_int(item.get("mal_id"))
@@ -69,7 +73,6 @@ def _replace_mapping_data(data: list[dict]) -> None:
                 tmdb_tv_id = _to_int(tmdb_obj.get("tv"))
                 tmdb_movie_id = _to_int(tmdb_obj.get("movie"))
             elif isinstance(tmdb_obj, (int, str, list)):
-                # Default numeric themoviedb_id based on anime type if present
                 item_type = str(item.get("type", "")).upper()
                 if item_type == "MOVIE":
                     tmdb_movie_id = _to_int(tmdb_obj)
@@ -83,7 +86,6 @@ def _replace_mapping_data(data: list[dict]) -> None:
             elif isinstance(season_obj, (int, str, list)):
                 tmdb_season = _to_int(season_obj)
 
-            # Skip entries that have no usable mapping IDs whatsoever
             if not any([mal_id, anilist_id, kitsu_id, tvdb_id, tmdb_tv_id, tmdb_movie_id]):
                 continue
 
@@ -97,12 +99,14 @@ def _replace_mapping_data(data: list[dict]) -> None:
                 tmdb_season=tmdb_season,
             )
             bulk_objects.append(mapping)
-            
-        # Bulk save for maximum speed
-        db.bulk_save_objects(bulk_objects)
-        db.commit()
+
+        for offset in range(0, len(bulk_objects), 500):
+            chunk = bulk_objects[offset:offset + 500]
+            db.add_all(chunk)
+            db.commit()
+
         print(f"[Worker] Fribb Database Sync Complete! Inserted {len(bulk_objects)} records.")
-        
+
     except Exception as e:
         db.rollback()
         print(f"[Worker] Database Sync Failed: {e}")

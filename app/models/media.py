@@ -38,6 +38,25 @@ class EpisodeShort(BaseModel):
     air_date: Optional[str] = None
     synopsis: Optional[str] = None
 
+class ScheduleEntry(BaseModel):
+    """One airing episode on the release schedule.
+
+    The project historically grouped entries by weekday, so we keep the old
+    'release_date' / 'airing_at' fields as optional compatibility fields while
+    still accepting the newer flat schema. The frontend can then choose whether
+    to bucket on the client or server without data loss.
+    """
+    id: str = Field(..., description="AniList-prefixed media id, e.g. 'a176496'")
+    title: Optional[str] = Field(None, description="Optional title for legacy compatibility tests")
+    poster_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    type: MediaType = MediaType.ANIME
+    episode: Optional[int] = Field(None, description="Episode number airing at airing_at")
+    airing_at: int = Field(default=0, description="Unix epoch seconds, UTC")
+    release_date: Optional[str] = Field(None, description="Legacy release date used by older schedules")
+    release_year: Optional[int] = None
+    rating: Optional[float] = Field(None, description="Normalized to a 10.0 scale")
+
 class Season(BaseModel):
     season_number: int
     title: str

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Watch Party - Animax</title>
+    <link rel="icon" href="/static/logo.png">
+    
+    <!-- Modern Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand-primary: #ffffff;
+            --brand-secondary: #94949e;
+            --brand-cyan: #8FE7EC;
+            --brand-cyan-glow: rgba(143, 231, 236, 0.35);
+            --bg-glass: rgba(16, 16, 20, 0.72);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glass-active: rgba(143, 231, 236, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #060608;
+            background-image: 
+                radial-gradient(circle at 50% 10%, rgba(143, 231, 236, 0.09) 0%, transparent 50%),
+                radial-gradient(circle at 90% 85%, rgba(255, 255, 255, 0.03) 0%, transparent 45%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .join-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 28px;
+            padding: 36px 30px;
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* Dedicated Logo Container */
+        .brand-logo-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 22px;
+            height: 48px;
+        }
+
+        .brand-logo {
+            max-height: 44px;
+            max-width: 160px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 12px rgba(143, 231, 236, 0.2));
+            transition: transform 0.3s ease;
+        }
+
+        .brand-logo:hover {
+            transform: scale(1.04);
+        }
+
+        /* Fallback icon if logo image fails/not found */
+        .header-icon-fallback {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(143, 231, 236, 0.08);
+            border: 1px solid rgba(143, 231, 236, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brand-cyan);
+            box-shadow: 0 0 20px rgba(143, 231, 236, 0.12);
+        }
+
+        .header-icon-fallback svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        h1 {
+            font-size: 1.65rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        p.subtitle {
+            font-size: 0.86rem;
+            color: var(--brand-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+            padding: 0 4px;
+        }
+
+        /* 5-Box Segmented Inputs with Lift and Highlight */
+        .code-box-container {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .code-box {
+            flex: 1;
+            max-width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 1.65rem;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            color: #ffffff;
+            outline: none;
+            cursor: text;
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            caret-color: var(--brand-cyan);
+        }
+
+        .code-box:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .code-box:focus {
+            border-color: var(--brand-cyan);
+            background: rgba(143, 231, 236, 0.06);
+            box-shadow: 
+                0 10px 24px rgba(143, 231, 236, 0.22),
+                0 0 0 1px rgba(143, 231, 236, 0.5);
+        }
+
+        .code-box.filled {
+            border-color: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        /* Dynamic Expand/Collapse Wrapper for Details */
+        .expandable-wrapper {
+            width: 100%;
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1), margin-bottom 0.35s ease;
+            margin-bottom: 0;
+        }
+
+        .expandable-wrapper.expanded {
+            grid-template-rows: 1fr;
+            margin-bottom: 20px;
+        }
+
+        .expandable-inner {
+            overflow: hidden;
+        }
+
+        /* Party Details Card */
+        .details-card {
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.3s ease 0.05s, transform 0.3s ease 0.05s;
+        }
+
+        .expandable-wrapper.expanded .details-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .details-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .media-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .party-members {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--brand-cyan);
+        }
+
+        .party-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--brand-cyan);
+            box-shadow: 0 0 8px var(--brand-cyan);
+            animation: pulse-dot 1.8s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .details-title {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .details-meta {
+            font-size: 0.8rem;
+            color: var(--brand-secondary);
+            font-weight: 500;
+        }
+
+        /* Dynamic Expandable Status/Error Message */
+        .status-wrapper {
+            width: 100%;
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.25s ease, margin-bottom 0.25s ease;
+            margin-bottom: 0;
+        }
+
+        .status-wrapper.expanded {
+            grid-template-rows: 1fr;
+            margin-bottom: 16px;
+        }
+
+        .status-msg {
+            overflow: hidden;
+            font-size: 0.82rem;
+            color: #f87171;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .status-wrapper.expanded .status-msg {
+            opacity: 1;
+        }
+
+        /* Join Action Button */
+        .join-btn {
+            width: 100%;
+            height: 52px;
+            border-radius: 14px;
+            border: none;
+            background: #1f1f23;
+            color: #52525b;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: not-allowed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .join-btn.active {
+            background: #ffffff;
+            color: #000000;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
+        }
+
+        .join-btn.active:hover {
+            transform: translateY(-2px);
+            background: #f4f4f5;
+            box-shadow: 0 12px 28px rgba(255, 255, 255, 0.28);
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            border-top: 2px solid #000000;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 420px) {
+            .join-card {
+                padding: 28px 20px;
+                border-radius: 22px;
+            }
+            .code-box {
+                height: 56px;
+                font-size: 1.45rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="join-card">
+    <!-- Brand Logo Section -->
+    <div class="brand-logo-container">
+        <img 
+            src="/static/logo.png" 
+            alt="Logo" 
+            class="brand-logo" 
+            id="brandLogo"
+            onerror="this.style.display='none'; document.getElementById('fallbackIcon').style.display='flex';"
+        >
+        <div class="header-icon-fallback" id="fallbackIcon" style="display: none;">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        </div>
+        
+    </div>
+
+    <h1>Watch Party</h1>
+    <p class="subtitle">Enter the 5-character party code to join friends and synchronize playback in real time.</p>
+
+    <!-- 5-Box Segmented Inputs -->
+    <div class="code-box-container" id="codeContainer">
+        <input type="text" class="code-box" maxlength="1" data-index="0" autocomplete="off" spellcheck="false" inputmode="text" autofocus>
+        <input type="text" class="code-box" maxlength="1" data-index="1" autocomplete="off" spellcheck="false" inputmode="text">
+        <input type="text" class="code-box" maxlength="1" data-index="2" autocomplete="off" spellcheck="false" inputmode="text">
+        <input type="text" class="code-box" maxlength="1" data-index="3" autocomplete="off" spellcheck="false" inputmode="text">
+        <input type="text" class="code-box" maxlength="1" data-index="4" autocomplete="off" spellcheck="false" inputmode="text">
+    </div>
+
+    <!-- Dynamic Preview Accordion (Zero Height until loaded) -->
+    <div class="expandable-wrapper" id="detailsWrapper">
+        <div class="expandable-inner">
+            <div class="details-card">
+                <div class="details-top">
+                    <span class="media-badge" id="mediaBadge">Movie</span>
+                    <div class="party-members">
+                        <span class="party-dot"></span>
+                        <span id="memberCount">1 watching</span>
+                    </div>
+                </div>
+                <div class="details-title" id="detailsTitle">Loading...</div>
+                <div class="details-meta" id="detailsMeta"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collapsible Error/Status message -->
+    <div class="status-wrapper" id="statusWrapper">
+        <div class="status-msg" id="statusMsg"></div>
+    </div>
+
+    <!-- Action Button -->
+    <button type="button" class="join-btn" id="joinBtn" disabled>
+        <span class="spinner" id="btnSpinner"></span>
+        <span id="joinBtnText">Enter 5-Letter Code</span>
+    </button>
+</div>
+
+<script>
+    const boxes = Array.from(document.querySelectorAll('.code-box'));
+    const detailsWrapper = document.getElementById('detailsWrapper');
+    const mediaBadge = document.getElementById('mediaBadge');
+    const memberCount = document.getElementById('memberCount');
+    const detailsTitle = document.getElementById('detailsTitle');
+    const detailsMeta = document.getElementById('detailsMeta');
+    const statusWrapper = document.getElementById('statusWrapper');
+    const statusMsg = document.getElementById('statusMsg');
+    const joinBtn = document.getElementById('joinBtn');
+    const joinBtnText = document.getElementById('joinBtnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+
+    let debounceTimer = null;
+    let targetRedirectUrl = null;
+
+    function getCodeValue() {
+        return boxes.map(b => b.value.trim()).join('');
+    }
+
+    function setCodeValue(code) {
+        const clean = code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+        boxes.forEach((box, i) => {
+            box.value = clean[i] || '';
+            box.classList.toggle('filled', Boolean(box.value));
+        });
+        if (clean.length === 5) {
+            boxes[4].focus();
+            verifyCode(clean);
+        } else {
+            const nextIdx = Math.min(clean.length, 4);
+            boxes[nextIdx].focus();
+            resetState();
+        }
+    }
+
+    // Segmented Input Event Listeners
+    boxes.forEach((box, idx) => {
+        // Handle direct typing
+        box.addEventListener('input', (e) => {
+            const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            e.target.value = val ? val[val.length - 1] : '';
+            box.classList.toggle('filled', Boolean(e.target.value));
+
+            resetState();
+
+            if (e.target.value && idx < boxes.length - 1) {
+                boxes[idx + 1].focus();
+                boxes[idx + 1].select();
+            }
+
+            checkAndVerify();
+        });
+
+        // Handle navigation keys and backspace
+        box.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace') {
+                if (!box.value && idx > 0) {
+                    boxes[idx - 1].focus();
+                    boxes[idx - 1].value = '';
+                    boxes[idx - 1].classList.remove('filled');
+                    resetState();
+                } else {
+                    box.value = '';
+                    box.classList.remove('filled');
+                    resetState();
+                }
+            } else if (e.key === 'ArrowLeft' && idx > 0) {
+                boxes[idx - 1].focus();
+            } else if (e.key === 'ArrowRight' && idx < boxes.length - 1) {
+                boxes[idx + 1].focus();
+            } else if (e.key === 'Enter' && !joinBtn.disabled && targetRedirectUrl) {
+                joinBtn.click();
+            }
+        });
+
+        // Paste support across all 5 boxes
+        box.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData).getData('text');
+            if (pasted) setCodeValue(pasted);
+        });
+
+        box.addEventListener('focus', () => box.select());
+    });
+
+    function checkAndVerify() {
+        const fullCode = getCodeValue();
+        clearTimeout(debounceTimer);
+
+        if (fullCode.length === 5) {
+            debounceTimer = setTimeout(() => {
+                verifyCode(fullCode);
+            }, 150);
+        } else {
+            joinBtnText.textContent = fullCode.length > 0 ? 'Enter 5-Letter Code' : 'Enter 5-Letter Code';
+        }
+    }
+
+    function resetState() {
+        detailsWrapper.classList.remove('expanded');
+        statusWrapper.classList.remove('expanded');
+        statusMsg.textContent = '';
+        joinBtn.classList.remove('active');
+        joinBtn.disabled = true;
+        joinBtnText.textContent = getCodeValue().length === 5 ? 'Checking...' : 'Enter 5-Letter Code';
+        targetRedirectUrl = null;
+    }
+
+    async function verifyCode(code) {
+        if (!code || code.length !== 5) return;
+        joinBtnText.textContent = 'Verifying...';
+
+        try {
+            const res = await fetch(`/api/party/info/${encodeURIComponent(code)}`);
+            const data = await res.json();
+
+            if (res.ok && data.valid) {
+                // Populate Card details
+                mediaBadge.textContent = data.media_type || 'Stream';
+                const count = data.members || 1;
+                memberCount.textContent = count === 1 ? '1 watching' : `${count} watching`;
+                detailsTitle.textContent = data.title || 'Live Media';
+
+                let metaString = '';
+                if (data.season && data.episode) {
+                    metaString = `Season ${data.season} • Episode ${data.episode}`;
+                } else if (data.year) {
+                    metaString = `Released ${data.year}`;
+                } else {
+                    metaString = 'Synchronized Stream';
+                }
+                detailsMeta.textContent = metaString;
+
+                // Dynamically expand details
+                statusWrapper.classList.remove('expanded');
+                detailsWrapper.classList.add('expanded');
+
+                // Activate Join Button
+                joinBtn.classList.add('active');
+                joinBtn.disabled = false;
+                joinBtnText.textContent = 'Join Watch Party';
+                targetRedirectUrl = data.redirect_url || `/player?party=${encodeURIComponent(code)}`;
+            } else {
+                showError(data.error || 'Party code not found or expired');
+            }
+        } catch (err) {
+            showError('Unable to connect to Watch Party server');
+        }
+    }
+
+    function showError(msg) {
+        detailsWrapper.classList.remove('expanded');
+        statusMsg.textContent = msg;
+        statusWrapper.classList.add('expanded');
+        joinBtn.classList.remove('active');
+        joinBtn.disabled = true;
+        joinBtnText.textContent = 'Invalid Code';
+    }
+
+    joinBtn.addEventListener('click', () => {
+        if (!targetRedirectUrl) return;
+        joinBtnText.textContent = 'Connecting...';
+        btnSpinner.style.display = 'inline-block';
+        window.location.href = targetRedirectUrl;
+    });
+
+    // Check URL parameters for direct join links (?code=ABC12 or ?party=ABC12)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialCode = urlParams.get('code') || urlParams.get('party');
+    if (initialCode) {
+        setCodeValue(initialCode);
+    }
+</script>
+</body>
+</html>

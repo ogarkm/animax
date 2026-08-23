@@ -14,7 +14,9 @@ Handles:
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -31,6 +33,9 @@ from pathlib import Path, PurePosixPath
 from typing import Any, AsyncIterator, Dict, List, Optional
 from urllib.parse import urlparse, urlunparse, urljoin, quote_plus
 
+import random
+import string
+
 import httpx
 from cachetools import LRUCache
 from fastapi import HTTPException, Request, WebSocket
@@ -46,6 +51,11 @@ MAX_KEEPALIVE = int(os.getenv("PROXY_MAX_KEEPALIVE", "50"))
 PLAYLIST_TTL = int(os.getenv("PROXY_PLAYLIST_TTL", "300"))
 PLAYLIST_CACHE_MAX = int(os.getenv("PROXY_PLAYLIST_CACHE_MAX", "2000"))
 SEGMENT_CACHE_MAX = int(os.getenv("PROXY_SEGMENT_CACHE_MAX", "256"))
+
+TOKEN_SECRET = (
+    os.getenv("PROXY_TOKEN_SECRET")
+    or getattr(settings, "JWT_SECRET_KEY", "")
+).encode("utf-8")
 
 USER_AGENT = os.getenv(
     "PROXY_USER_AGENT",
@@ -131,9 +141,19 @@ class UpstreamAsset:
 
 @dataclass
 class PartyRoom:
+    code: str
     playing: bool = False
     position: float = 0.0
     updated_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=time.time)
+    title: str = ""
+    media_type: str = "Movie"
+    season: Optional[str] = None
+    episode: Optional[str] = None
+    year: Optional[str] = None
+    logo: Optional[str] = None
+    synopsis: Optional[str] = None
+    query_params: str = ""
 
 
 party_rooms: Dict[str, PartyRoom] = {}
@@ -190,6 +210,41 @@ def _resolve_db_path(path: Path) -> Path:
             )
             return path
 
+
+def generate_party_code(length: int = 5) -> str:
+    """Generate a clean, unambiguous 5-character uppercase alphanumeric code."""
+    # Exclude easily confused characters (0, O, 1, I)
+    alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+    while True:
+        code = "".join(random.choices(alphabet, k=length))
+        if code not in party_rooms:
+            return code
+
+
+def create_party_room(
+    title: str = "",
+    media_type: str = "Movie",
+    season: Optional[str] = None,
+    episode: Optional[str] = None,
+    year: Optional[str] = None,
+    logo: Optional[str] = None,
+    synopsis: Optional[str] = None,
+    query_params: str = ""
+) -> PartyRoom:
+    code = generate_party_code()
+    room = PartyRoom(
+        code=code,
+        title=title or "Watch Party Stream",
+        media_type=media_type,
+        season=season,
+        episode=episode,
+        year=year,
+        logo=logo,
+        synopsis=synopsis,
+        query_params=query_params,
+    )
+    party_rooms[code] = room
+    return room
 
 def _canonicalize_url(url: str) -> str:
     parsed = urlparse(url)
@@ -279,9 +334,10 @@ def _token_for_url(url: str) -> str:
     token = reverse_tokens.get(canonical)
     if token:
         return token
-    
-    digest = hashlib.sha256(canonical.encode("utf-8")).digest()[:10]
-    token = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+    payload = base64.urlsafe_b64encode(canonical.encode("utf-8")).decode("ascii").rstrip("=")
+    signature = hmac.new(TOKEN_SECRET, payload.encode("ascii"), hashlib.sha256).digest()[:16]
+    token = f"v1.{payload}.{base64.urlsafe_b64encode(signature).decode('ascii').rstrip('=')}"
     
     if len(url_tokens) >= 10000:
         for _ in range(1000):
@@ -297,9 +353,22 @@ def _token_for_url(url: str) -> str:
 
 
 def _url_for_token(token: str) -> str:
+    local_url = url_tokens.get(token)
+    if local_url:
+        return local_url
+
     try:
-        return url_tokens[token]
-    except KeyError as exc:
+        if not token.startswith("v1."):
+            raise ValueError
+        payload, encoded_signature = token[3:].split(".", 1)
+        expected_signature = hmac.new(
+            TOKEN_SECRET, payload.encode("ascii"), hashlib.sha256
+        ).digest()[:16]
+        supplied_signature = base64.urlsafe_b64decode(encoded_signature + "===")
+        if not hmac.compare_digest(supplied_signature, expected_signature):
+            raise ValueError
+        return base64.urlsafe_b64decode(payload + "===").decode("utf-8")
+    except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
         raise HTTPException(status_code=404, detail="Unknown stream token") from exc
 
 

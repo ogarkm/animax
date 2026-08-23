@@ -8,37 +8,38 @@ from app.models.media import EpisodeShort
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 IMG_BASE = "https://image.tmdb.org/t/p/w500"
 
+# tmdb.py
+
 async def fetch_tmdb_trending(media_type: str = "movie") -> list:
-    """Fetches trending movies or tv shows and formats to Unified Model."""
-    url = f"{TMDB_BASE_URL}/trending/{media_type}/day"
+    """Fetches weekly trending (much higher cultural relevance than 24h spikes)."""
+    url = f"{TMDB_BASE_URL}/trending/{media_type}/week"
     
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=8.0) as client:
         resp = await client.get(url, params={"api_key": settings.TMDB_API_KEY})
         if resp.status_code != 200:
             return []
             
         results = resp.json().get("results", [])
-        
         formatted_list = []
         for item in results:
-            # Map TMDB IDs to our custom prefixes
             prefix = "tm" if media_type == "movie" else "tt"
-            custom_id = f"{prefix}{item.get('id')}"
-            
-            title = item.get("title") or item.get("name")
             release_date = item.get("release_date") or item.get("first_air_date") or ""
             year = int(release_date.split("-")[0]) if release_date else None
             
             card = BaseMediaCard(
-                id=custom_id,
-                title=title,
+                id=f"{prefix}{item.get('id')}",
+                title=item.get("title") or item.get("name"),
                 type=MediaType.MOVIE if media_type == "movie" else MediaType.TV,
                 poster_url=f"{IMG_BASE}{item.get('poster_path')}" if item.get('poster_path') else None,
                 banner_url=f"https://image.tmdb.org/t/p/w1280{item.get('backdrop_path')}" if item.get('backdrop_path') else None,
                 release_year=year,
-                rating=round(item.get("vote_average", 0), 1)
+                rating=round(item.get("vote_average", 0), 1),
             )
-            formatted_list.append(card.model_dump()) # Store as dict for caching
+            # Store metadata attributes for spotlight ranking
+            card_dict = card.model_dump()
+            card_dict["vote_count"] = item.get("vote_count", 0)
+            card_dict["popularity"] = item.get("popularity", 0)
+            formatted_list.append(card_dict)
             
         return formatted_list
     

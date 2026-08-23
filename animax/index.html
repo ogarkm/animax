@@ -612,6 +612,7 @@
             font-size: 1.25rem;
             font-weight: 700;
             letter-spacing: -0.02em;
+            cursor: pointer;
         }
 
         .desktop-nav-logo svg {
@@ -1249,29 +1250,34 @@
             <a class="mobile-nav-item" data-target="discover">
                 <i class="ph ph-compass mobile-icon"></i>
                 <i class="ph-fill ph-compass mobile-icon active-icon"></i>
-                <span class="mobile-label">Discover</span>
+                <span class="mobile-label">Search</span>
             </a>
 
             <!-- Live -->
             <a class="mobile-nav-item" data-target="live">
-                <div class="mobile-submenu">
-                    <div class="mobile-submenu-item" data-action="main_live">
-                        <i class="ph ph-play-circle"></i>
-                        <span>Live Hub</span>
-                    </div>
-                    <div class="mobile-submenu-item" data-action="sports">
-                        <i class="ph ph-trophy"></i>
-                        <span>Sports</span>
-                    </div>
-                    <div class="mobile-submenu-item" data-action="channels">
-                        <i class="ph ph-broadcast"></i>
-                        <span>Channels</span>
-                    </div>
+            <div class="mobile-submenu">
+                <div class="mobile-submenu-item" data-action="main_live">
+                    <i class="ph ph-play-circle"></i>
+                    <span>Live Hub</span>
                 </div>
-                <i class="ph ph-broadcast mobile-icon"></i>
-                <i class="ph-fill ph-broadcast mobile-icon active-icon"></i>
-                <span class="mobile-label">Live</span>
-            </a>
+                <div class="mobile-submenu-item" data-action="sports">
+                    <i class="ph ph-trophy"></i>
+                    <span>Sports</span>
+                </div>
+                <div class="mobile-submenu-item" data-action="channels">
+                    <i class="ph ph-broadcast"></i>
+                    <span>Channels</span>
+                </div>
+                <!-- 4th Submenu Entry -->
+                <div class="mobile-submenu-item" data-action="join_party">
+                    <i class="ph ph-users-three"></i>
+                    <span>Join Party</span>
+                </div>
+            </div>
+            <i class="ph ph-broadcast mobile-icon"></i>
+            <i class="ph-fill ph-broadcast mobile-icon active-icon"></i>
+            <span class="mobile-label">Live</span>
+        </a>
 
             <!-- Profile -->
             <a class="mobile-nav-item" data-target="profile">
@@ -1297,7 +1303,7 @@
 
         <!-- 4. DESKTOP: Top Premium Floating Glassy Bar -->
         <nav id="desktop-navbar">
-            <div class="desktop-nav-logo">
+            <div class="desktop-nav-logo btn-tactile" id="navbar-logo-home" role="button" aria-label="Go to home">
                 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                     <path d="M104.321 172.293L54.1555 172.928C52.264 172.952 51.3995 170.579 52.8629 169.381L142.946 95.5903C143.41 95.2105 143.679 94.6426 143.679 94.0431V90.8091C143.679 90.2785 143.468 89.7696 143.093 89.3945L141.7 88.0024C141.588 87.8901 141.462 87.7916 141.327 87.7089L66.825 42.3214C66.5115 42.1304 66.1515 42.0294 65.7844 42.0294H61.5782C60.9708 42.0294 60.3964 42.3054 60.0168 42.7796L58.1917 45.0599C57.9078 45.4146 57.7531 45.8554 57.7531 46.3097V50.2903C57.7531 50.5071 57.7883 50.7224 57.8575 50.9279L85.2264 132.292C85.4975 133.098 85.2295 133.987 84.5583 134.508L75.0042 141.936C73.9197 142.779 72.3278 142.303 71.884 141.003L42.1073 53.7946C42.0362 53.5866 42 53.3682 42 53.1484V43.0253C42 42.8394 42.0259 42.6544 42.077 42.4756L43.2712 38.2983C43.3762 37.9307 43.5845 37.6009 43.8713 37.348L55.038 27.5C55.4033 27.1778 55.8737 27 56.3609 27H69.3695C69.7335 27 70.0907 27.0994 70.4024 27.2874L152.519 76.8155C152.826 77.0005 153.077 77.2643 153.247 77.5796L157.761 85.9578C157.918 86.2494 158 86.5753 158 86.9064V125.182C158 125.563 157.891 125.935 157.687 126.256L153.164 133.36C153.047 133.544 152.901 133.707 152.732 133.843L105.551 171.851C105.202 172.132 104.769 172.287 104.321 172.293Z"/>
                 </svg>
@@ -1382,7 +1388,7 @@
                     <div class="nav-trigger">
                         <i class="ph ph-compass"></i>
                         <i class="ph-fill ph-compass active-icon"></i>
-                        <span>Discover</span>
+                        <span>Search</span>
                     </div>
                 </div>
                 <div class="desktop-nav-item" data-target="live">
@@ -1419,6 +1425,16 @@
                                 <span class="chevron-arrow">&rsaquo;</span>
                             </span>
                             Channels
+                        </a>
+                        <!-- 4th Submenu Entry -->
+                        <a href="#" data-action="join_party">
+                            <span class="atomic-indicator">
+                                <span class="dot-particle dot-1"></span>
+                                <span class="dot-particle dot-2"></span>
+                                <span class="dot-particle dot-3"></span>
+                                <span class="chevron-arrow">&rsaquo;</span>
+                            </span>
+                            Join Party
                         </a>
                     </div>
                 </div>
@@ -1600,10 +1616,13 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const initialMode = urlParams.get('mode');
                 let homeParams = '';
+                let animeParams = '';
 
                 // Enable deep-linking preloads automatically matching current address bar parameter
-                if (initialMode && ['movies', 'tv', 'manga'].includes(initialMode)) {
+                if (initialMode && ['movies', 'tv'].includes(initialMode)) {
                     homeParams = `?mode=${initialMode}`;
+                } else if (initialMode && ['manga', 'schedule'].includes(initialMode)) {
+                    animeParams = `?mode=${initialMode}`;
                 }
 
                 tabs.forEach(tab => {
@@ -1613,6 +1632,8 @@
                     if (tab === 'home') {
                         iframe.src = `tabs/${tab}.html${homeParams}`; 
                         iframe.classList.add('active');
+                    } else if (tab === 'anime' && animeParams) {
+                        iframe.src = `tabs/${tab}.html${animeParams}`;
                     }
                     tabContainer.appendChild(iframe);
                     iframes[tab] = iframe;
@@ -1729,6 +1750,16 @@
                 });
             });
 
+            const navbarLogo = document.getElementById('navbar-logo-home');
+            if (navbarLogo) {
+                navbarLogo.addEventListener('click', () => {
+                    if (document.getElementById('discover-overlay').classList.contains('active')) {
+                        closeDiscover();
+                    }
+                    triggerSubAction('main_home');
+                });
+            }
+
             function syncAddressBar(action) {
                 const activeTheme = SplashThemeEngine.getThemeName();
                 const params = new URLSearchParams();
@@ -1816,6 +1847,17 @@
             }
 
             function triggerSubAction(action) {
+                // Intercept Join Party and open the cover sheet modal
+                if (action === 'join_party') {
+                    openCover('covers/join.html', false); // or 'join.html' depending on your folder structure
+
+                    // Close any opened mobile submenus
+                    document.querySelectorAll('.mobile-nav-item').forEach(nav => {
+                        nav.classList.remove('submenu-open');
+                    });
+                    return;
+                }
+
                 let targetTab = 'home';
                 let queryParam = '';
                 
@@ -1826,7 +1868,7 @@
                     targetTab = 'home';
                     queryParam = '?mode=tv';
                 } else if (action === 'manga') {
-                    targetTab = 'home';
+                    targetTab = 'anime';
                     queryParam = '?mode=manga';
                 } else if (action === 'release_schedule') {
                     targetTab = 'anime';

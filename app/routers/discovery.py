@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 import asyncio
 import httpx
 import re
@@ -10,11 +11,12 @@ from app.core.database import get_cache_db, get_mapping_db
 from app.core.config import settings
 from app.services.cache_engine import CacheEngine
 from app.services.mapping_engine import MappingEngine
-from app.models.media import BaseMediaCard, DetailedMedia, MediaType, MediaStatus, Season, CastMember
+from app.models.media import BaseMediaCard, DetailedMedia, MediaType, MediaStatus, Season, CastMember, ScheduleEntry
 
 from app.providers.metadata.tmdb import fetch_tmdb_trending, search_tmdb, get_tmdb_details, IMG_BASE
 from app.providers.metadata.anilist import (
-    fetch_anilist_trending, search_anilist, get_anilist_details, get_anilist_season_chain
+    fetch_anilist_trending, search_anilist, get_anilist_details, get_anilist_season_chain,
+    fetch_anilist_schedule,
 )
 from app.providers.metadata.jikan import get_jikan_details
 from app.providers.metadata.kitsu import get_kitsu_episodes, enrich_episodes_with_kitsu
@@ -23,10 +25,40 @@ from app.providers.metadata.tmdb import get_tmdb_seasons_and_episodes
 router = APIRouter(tags=["Discovery (Home, Search & Details)"])
 
 TMDB_API_KEY = getattr(settings, "TMDB_API_KEY", os.getenv("TMDB_API_KEY", "your_fallback_api_key_here"))
+import zoneinfo
+from datetime import datetime, timezone, timedelta
 
-# ==========================================
-# ROBUST MODEL NORMALIZATION ENGINE
-# ==========================================
+def group_schedule_by_weekday(entries: List[dict]) -> Dict[str, List[dict]]:
+    """Legacy compatibility helper: buckets a schedule into the stable
+    monday..sunday order expected by the older UI/tests.
+
+    Prefer the explicit release_date when available because legacy fixtures and
+    older server payloads encoded the weekday there; only fall back to airing_at
+    when no release date is present.
+    """
+    ordered_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    grouped = {day: [] for day in ordered_days}
+
+    def resolve_weekday(item: dict) -> Optional[str]:
+        release_date = (item or {}).get("release_date")
+        if release_date:
+            try:
+                return datetime.strptime(release_date, "%Y-%m-%d").strftime("%A").lower()
+            except ValueError:
+                pass
+
+        airing_at = int((item or {}).get("airing_at") or 0)
+        if airing_at:
+            return datetime.fromtimestamp(airing_at, tz=timezone.utc).strftime("%A").lower()
+        return None
+
+    for item in sorted(entries, key=lambda entry: (entry or {}).get("release_date") or (entry or {}).get("airing_at") or ""):
+        weekday_name = resolve_weekday(item)
+        if weekday_name in grouped:
+            grouped[weekday_name].append(item)
+
+    return grouped
+
 
 def normalize_list(lst: Optional[List[Any]]) -> List[BaseMediaCard]:
     """
@@ -103,46 +135,69 @@ def strip_known_anime(cards: List[BaseMediaCard], mapper: MappingEngine) -> List
     return [c for c in cards if not is_known_anime(c)]
 
 
-def pick_spotlight(pools: List[List[BaseMediaCard]], count: int = 5) -> List[BaseMediaCard]:
+def pick_spotlight(
+    movies: List[dict | BaseMediaCard],
+    tv: List[dict | BaseMediaCard],
+    anime: List[dict | BaseMediaCard],
+    items_per_category: int = 3
+) -> List[BaseMediaCard]:
     """
-    Picks diverse, high-quality hero/spotlight items from a wide candidate
-    pool (trending + popular + top_rated, across movies/tv/anime). Uses an
-    adaptive quality floor instead of an all-or-nothing threshold, so it
-    never has to fall back to raw/unsorted daily-trending noise. Interleaves
-    by type so the hero rail can't end up all-movies or all-anime.
+    Selects culturally relevant, high-buzz spotlight items.
+    Filters out niche 1-vote 10/10 TMDB anomalies and guarantees balanced representation.
     """
-    seen_ids = set()
-    candidates = []
-    for pool in pools:
+    def filter_and_rank(pool: list, is_tmdb: bool = True) -> List[BaseMediaCard]:
+        candidates = []
         for item in pool:
-            if item.id in seen_ids or not item.banner_url:
+            data = item if isinstance(item, dict) else item.model_dump()
+            
+            # Must have a valid high-res banner
+            if not data.get("banner_url"):
                 continue
-            seen_ids.add(item.id)
-            candidates.append(item)
 
-    quality_pool = candidates
-    for floor in (7.5, 7.0, 6.5, 6.0, 0):
-        filtered = [c for c in candidates if c.rating and c.rating >= floor]
-        if len(filtered) >= count:
-            quality_pool = filtered
-            break
-        quality_pool = filtered
+            rating = data.get("rating") or 0
+            vote_count = data.get("vote_count", 100) # AniList doesn't supply raw vote count, defaults safe
 
-    quality_pool.sort(key=lambda x: x.rating or 0, reverse=True)
-
-    by_type: Dict[Any, List[BaseMediaCard]] = {}
-    for item in quality_pool:
-        by_type.setdefault(item.type, []).append(item)
-
-    result = []
-    while len(result) < count and any(by_type.values()):
-        for t in list(by_type.keys()):
-            if not by_type[t]:
+            # Exclude TMDB ghost entries with low vote counts and low ratings
+            if is_tmdb and vote_count < 50:
                 continue
-            result.append(by_type[t].pop(0))
-            if len(result) == count:
-                break
-    return result
+            if rating < 6.5: # Skip poorly reviewed media
+                continue
+
+            candidates.append(BaseMediaCard(
+                id=str(data["id"]),
+                title=str(data["title"]),
+                poster_url=data.get("poster_url"),
+                banner_url=data.get("banner_url"),
+                type=MediaType(data["type"]),
+                release_year=data.get("release_year"),
+                rating=rating
+            ))
+
+        # Deduplicate preserving original list order (which already reflects trending rank)
+        seen_ids = set()
+        deduped = []
+        for c in candidates:
+            if c.id not in seen_ids:
+                seen_ids.add(c.id)
+                deduped.append(c)
+        return deduped
+
+    top_movies = filter_and_rank(movies, is_tmdb=True)[:items_per_category]
+    top_tv = filter_and_rank(tv, is_tmdb=True)[:items_per_category]
+    top_anime = filter_and_rank(anime, is_tmdb=False)[:items_per_category]
+
+    # Interleave to create a balanced carousel (e.g. Movie -> Anime -> TV -> Movie -> Anime -> TV)
+    spotlight: List[BaseMediaCard] = []
+    max_len = max(len(top_movies), len(top_tv), len(top_anime))
+    for i in range(max_len):
+        if i < len(top_anime):
+            spotlight.append(top_anime[i])
+        if i < len(top_movies):
+            spotlight.append(top_movies[i])
+        if i < len(top_tv):
+            spotlight.append(top_tv[i])
+
+    return spotlight
 
 # ==========================================
 # ADVANCED METADATA FETCHING CORE ENGINE
@@ -248,37 +303,34 @@ async def get_home_page_api_home_get(
     map_db: Session = Depends(get_mapping_db)
 ):
     cache = CacheEngine(db)
-    cache_key = "home_page_trending_advanced_v5"
+    cache_key = "home_page_trending_advanced_v6"
     
     if cached_data := cache.get(cache_key):
         return cached_data
 
-    # Fetch raw inputs concurrently
+    # Fetch raw feeds concurrently
     results = await asyncio.gather(
-        fetch_tmdb_trending("movie"),
-        fetch_tmdb_trending("tv"),
-        fetch_anilist_trending(),
-        fetch_anilist_list_safe("MANGA", ["TRENDING_DESC"]),
+        fetch_tmdb_trending("movie"),                          # 0
+        fetch_tmdb_trending("tv"),                             # 1
+        fetch_anilist_trending(),                              # 2
+        fetch_anilist_list_safe("MANGA", ["TRENDING_DESC"]),   # 3
         
-        fetch_tmdb_list_safe("movie", "popular"),
-        fetch_tmdb_list_safe("tv", "popular"),
-        fetch_anilist_list_safe("ANIME", ["POPULAR_DESC"]),
-        fetch_anilist_list_safe("MANGA", ["POPULAR_DESC"]),
+        fetch_tmdb_list_safe("movie", "popular"),              # 4
+        fetch_tmdb_list_safe("tv", "popular"),                 # 5
+        fetch_anilist_list_safe("ANIME", ["POPULAR_DESC"]),    # 6
+        fetch_anilist_list_safe("MANGA", ["POPULAR_DESC"]),    # 7
         
-        fetch_tmdb_list_safe("movie", "top_rated"),
-        fetch_tmdb_list_safe("tv", "top_rated"),
-        fetch_anilist_list_safe("ANIME", ["SCORE_DESC"]),
-        fetch_anilist_list_safe("MANGA", ["SCORE_DESC"]),
+        fetch_tmdb_list_safe("movie", "top_rated"),            # 8
+        fetch_tmdb_list_safe("tv", "top_rated"),               # 9
+        fetch_anilist_list_safe("ANIME", ["SCORE_DESC"]),      # 10
+        fetch_anilist_list_safe("MANGA", ["SCORE_DESC"]),      # 11
         
-        fetch_tmdb_list_safe("movie", "upcoming"),
+        fetch_tmdb_list_safe("movie", "upcoming"),             # 12
     )
 
     mapper = MappingEngine(map_db)
 
-    # Strictly normalize all raw outputs into verified Pydantic model objects.
-    # TMDB-sourced movie/tv lists get run through strip_known_anime so shows
-    # already covered by the AniList-sourced lists below don't show up twice
-    # (or mistyped as tv/movie) elsewhere on the page.
+    # 1. Normalize all lists and strip duplicate TMDB anime cards
     movies_trend = strip_known_anime(normalize_list(results[0]), mapper)
     tv_trend = strip_known_anime(normalize_list(results[1]), mapper)
     anime_trend = normalize_list(results[2])
@@ -296,15 +348,18 @@ async def get_home_page_api_home_get(
     
     movies_up = strip_known_anime(normalize_list(results[12]), mapper)
 
-    # Hero/spotlight: wide pool (trending + popular + top_rated, all types),
-    # adaptive quality floor, deduped, type-interleaved. See pick_spotlight
-    # docstring — this replaces the old "trending-only, fall back to raw
-    # unsorted list" logic that was surfacing low-quality daily-trending noise.
-    spotlight_items = pick_spotlight([
-        movies_trend, movies_pop, movies_top,
-        tv_trend, tv_pop, tv_top,
-        anime_trend, anime_pop, anime_top,
-    ])
+    # 2. Build candidate pools combining Trending + Popular for maximum cultural relevance
+    movie_candidates = results[0] + results[4]
+    tv_candidates = results[1] + results[5]
+    anime_candidates = results[2] + results[6]
+
+    # 3. Generate balanced 9-item spotlight (3 Anime, 3 Movies, 3 TV series)
+    spotlight_items = pick_spotlight(
+        movies=movie_candidates,
+        tv=tv_candidates,
+        anime=anime_candidates,
+        items_per_category=3,
+    )
 
     home_data = {
         "spotlight": spotlight_items,
@@ -327,8 +382,12 @@ async def get_home_page_api_home_get(
         "upcoming_movies": movies_up
     }
 
-    # Serialization matches schema standards perfectly
-    cache.set(cache_key, {k: [item.model_dump() for item in v] for k, v in home_data.items()}, ttl_seconds=21600)
+    # Cache response for 6 hours
+    cache.set(
+        cache_key,
+        {k: [item.model_dump() for item in v] for k, v in home_data.items()},
+        ttl_seconds=21600
+    )
     return home_data
 
 
@@ -412,6 +471,115 @@ async def search_all_api_search_get(
     cache.set(cache_key, [item.model_dump() for item in normalized], ttl_seconds=86400)
     return normalized
 
+
+@router.get("/anime", response_model=Dict[str, List[BaseMediaCard]])
+async def get_anime_catalog(
+    db: Session = Depends(get_cache_db)
+):
+    """Returns structured anime hub shelves and a dedicated anime spotlight."""
+    cache = CacheEngine(db)
+    cache_key = "anime_hub_shelves_v1"
+    if cached_data := cache.get(cache_key):
+        return cached_data
+
+    trending, popular, top_rated, upcoming = await asyncio.gather(
+        fetch_anilist_list_safe("ANIME", ["TRENDING_DESC"]),
+        fetch_anilist_list_safe("ANIME", ["POPULAR_DESC"]),
+        fetch_anilist_list_safe("ANIME", ["SCORE_DESC"]),
+        fetch_anilist_list_safe("ANIME", ["POPULAR_DESC"], status="NOT_YET_RELEASED"),
+    )
+
+    # Curate top 6 anime for the hero carousel (high buzz + valid banner)
+    spotlight_candidates = trending + popular
+    spotlight: List[BaseMediaCard] = []
+    seen = set()
+
+    for item in spotlight_candidates:
+        if item.id not in seen and item.banner_url and (item.rating or 0) >= 7.0:
+            seen.add(item.id)
+            spotlight.append(item)
+            if len(spotlight) == 6:
+                break
+
+    # Fallback to fill up to 5 if rating floor was too strict
+    if len(spotlight) < 5:
+        for item in spotlight_candidates:
+            if item.id not in seen and item.banner_url:
+                seen.add(item.id)
+                spotlight.append(item)
+                if len(spotlight) == 5:
+                    break
+
+    payload = {
+        "spotlight": spotlight,
+        "trending_anime": trending,
+        "popular_anime": popular,
+        "top_rated_anime": top_rated,
+        "upcoming_anime": upcoming,
+    }
+
+    cache.set(
+        cache_key,
+        {k: [item.model_dump() for item in v] for k, v in payload.items()},
+        ttl_seconds=21600
+    )
+    return payload
+
+
+@router.get("/schedule", response_model=Dict[str, List[ScheduleEntry]])
+async def get_release_schedule(
+    week_offset: int = Query(0, description="Offset by weeks (0 = current week, 1 = next week, -1 = previous)"),
+    tz: str = Query("UTC", description="User's local timezone (e.g., America/Chicago)"),
+    db: Session = Depends(get_cache_db),
+):
+    """Return upcoming anime episodes mapped perfectly to the user's local Monday-Sunday week."""
+    try:
+        user_tz = zoneinfo.ZoneInfo(tz)
+    except Exception:
+        user_tz = zoneinfo.ZoneInfo("UTC")
+
+    cache_key = f"anime_schedule_wo_{week_offset}_{tz}"
+    cache = CacheEngine(db)
+    if cached_data := cache.get(cache_key):
+        return cached_data
+
+    # 1. Determine Monday 00:00:00 and Sunday 23:59:59 in the USER'S local timezone
+    now_local = datetime.now(user_tz)
+    
+    # .weekday() returns 0 for Monday, 6 for Sunday
+    days_since_monday = now_local.weekday()
+    start_of_current_week = now_local.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days_since_monday)
+    
+    # 2. Shift the week based on week_offset
+    target_start_local = start_of_current_week + timedelta(weeks=week_offset)
+    target_end_local = target_start_local + timedelta(days=7) # Next Monday 00:00:00
+
+    # 3. Convert absolute local bounds to UTC timestamps for AniList
+    start_ts = int(target_start_local.timestamp())
+    end_ts = int(target_end_local.timestamp()) - 1
+
+    # Fetch entries (passing exact timestamps now)
+    raw_entries = await fetch_anilist_schedule(start_ts, end_ts)
+    
+    # 4. Group results into buckets accurately according to the local timezone
+    ordered_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    grouped_payload = {day: [] for day in ordered_days}
+
+    for entry in raw_entries:
+        airing_at = entry.get("airing_at")
+        if not airing_at:
+            continue
+            
+        # Convert UTC timestamp BACK to user's local timezone to find which day bucket it belongs in
+        local_dt = datetime.fromtimestamp(airing_at, tz=timezone.utc).astimezone(user_tz)
+        day_name = local_dt.strftime("%A").lower()
+        
+        if day_name in grouped_payload:
+            se = ScheduleEntry(**{**entry, "title": entry.get("title") or "Untitled anime"})
+            grouped_payload[day_name].append(se.model_dump())
+
+    cache.set(cache_key, grouped_payload, ttl_seconds=900)
+    return grouped_payload
 
 @router.get("/media/{media_id}", response_model=DetailedMedia)
 async def get_media_details(

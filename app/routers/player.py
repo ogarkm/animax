@@ -14,7 +14,7 @@ from urllib.parse import quote_plus
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response, StreamingResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.services import player_proxy as pp
@@ -141,20 +141,106 @@ async def status() -> dict:
 
 # --- Watch Party Endpoints ---
 
+@router.get("/join", response_class=HTMLResponse)
+async def get_join_page(request: Request):
+    """Serves the 5-letter Watch Party entry & autopopulation UI."""
+    return templates.TemplateResponse(request, "join.html", {"request": request})
+
+
+@router.post("/api/party/new")
 @router.get("/api/party/new")
-async def party_new() -> dict:
-    """Mint a short room id for a new watch party link."""
-    return {"room": uuid.uuid4().hex[:10]}
+async def api_party_new(request: Request):
+    """Mints a unique 5-character alphanumeric party code and stores stream metadata."""
+    title = ""
+    media_type = "Movie"
+    season = None
+    episode = None
+    year = None
+    logo = None
+    synopsis = None
+    full_player_path = ""
+
+    if request.method == "POST":
+        try:
+            body = await request.json()
+            title = body.get("title", "")
+            season = str(body.get("season")) if body.get("season") not in (None, "None") else None
+            episode = str(body.get("episode")) if body.get("episode") not in (None, "None") else None
+            year = str(body.get("year")) if body.get("year") not in (None, "None") else None
+            logo = body.get("logo")
+            synopsis = body.get("synopsis")
+            full_player_path = body.get("player_path") or body.get("search_params") or ""
+            if body.get("is_live"):
+                media_type = "Live Stream"
+            elif season and episode:
+                media_type = "TV Series"
+        except Exception:
+            pass
+    else:
+        title = request.query_params.get("title", "")
+        season = request.query_params.get("season")
+        episode = request.query_params.get("episode")
+
+    room = pp.create_party_room(
+        title=title,
+        media_type=media_type,
+        season=season,
+        episode=episode,
+        year=year,
+        logo=logo,
+        synopsis=synopsis,
+        query_params=full_player_path,
+    )
+    return {"room": room.code, "code": room.code}
+
+
+@router.get("/api/party/info/{code}")
+async def api_party_info(code: str):
+    """Returns real-time room metadata, members count, and target player path for join.html."""
+    code_clean = code.strip().upper()
+    room = pp.party_rooms.get(code_clean)
+    if not room:
+        return JSONResponse(status_code=404, content={"valid": False, "error": "Party code not found or expired"})
+
+    conns = pp.party_connections.get(code_clean, {})
+    member_count = max(1, len(conns))
+
+    # Reconstruct player redirect url cleanly
+    if room.query_params:
+        base = room.query_params
+        if "party=" not in base:
+            joiner = "&" if "?" in base else "?"
+            redirect_url = f"{base}{joiner}party={code_clean}"
+        else:
+            redirect_url = base
+    else:
+        redirect_url = f"/player/stream?party={code_clean}"
+
+    return {
+        "valid": True,
+        "code": room.code,
+        "title": room.title or "Watch Party Stream",
+        "media_type": room.media_type,
+        "season": room.season,
+        "episode": room.episode,
+        "year": room.year,
+        "logo": room.logo,
+        "members": member_count,
+        "redirect_url": redirect_url,
+    }
 
 
 @router.websocket("/ws/party/{room_id}")
 async def websocket_party(websocket: WebSocket, room_id: str):
     await websocket.accept()
+    room_code = room_id.strip().upper()
     client_id = uuid.uuid4().hex[:8]
 
     async with pp.party_lock:
-        room = pp.party_rooms.setdefault(room_id, pp.PartyRoom())
-        conns = pp.party_connections.setdefault(room_id, {})
+        if room_code not in pp.party_rooms:
+            pp.party_rooms[room_code] = pp.PartyRoom(code=room_code)
+        room = pp.party_rooms[room_code]
+        conns = pp.party_connections.setdefault(room_code, {})
         conns[client_id] = websocket
         member_count = len(conns)
         snapshot_playing = room.playing
@@ -168,7 +254,7 @@ async def websocket_party(websocket: WebSocket, room_id: str):
             "position": snapshot_position,
             "members": member_count,
         }))
-        await pp._party_broadcast(room_id, {"type": "members", "members": member_count}, exclude_client_id=client_id)
+        await pp._party_broadcast(room_code, {"type": "members", "members": member_count}, exclude_client_id=client_id)
 
         while True:
             raw = await websocket.receive_text()
@@ -199,7 +285,7 @@ async def websocket_party(websocket: WebSocket, room_id: str):
                     room.playing = False
                 playing_now = room.playing
 
-            await pp._party_broadcast(room_id, {
+            await pp._party_broadcast(room_code, {
                 "type": msg_type,
                 "position": position,
                 "playing": playing_now,
@@ -208,21 +294,21 @@ async def websocket_party(websocket: WebSocket, room_id: str):
     except WebSocketDisconnect:
         pass
     except Exception:
-        logger.exception("Watch party websocket error for room %s", room_id)
+        logger.exception("Watch party websocket error for room %s", room_code)
     finally:
         member_count = 0
         room_still_open = False
         async with pp.party_lock:
-            conns = pp.party_connections.get(room_id)
+            conns = pp.party_connections.get(room_code)
             if conns is not None:
                 conns.pop(client_id, None)
                 member_count = len(conns)
                 room_still_open = bool(conns)
                 if not conns:
-                    pp.party_connections.pop(room_id, None)
-                    pp.party_rooms.pop(room_id, None)
+                    pp.party_connections.pop(room_code, None)
+                    pp.party_rooms.pop(room_code, None)
         if room_still_open:
-            await pp._party_broadcast(room_id, {"type": "members", "members": member_count})
+            await pp._party_broadcast(room_code, {"type": "members", "members": member_count})
 
 
 # --- HLS Streaming Proxy Endpoints ---

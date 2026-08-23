@@ -106,7 +106,7 @@
             transform: translateX(-50%) translateY(-10px);
             width: min(94vw, 1080px);
             display: flex; justify-content: space-between; align-items: flex-start;
-            z-index: 20; opacity: 0; pointer-events: none;
+            z-index: 120; opacity: 0; pointer-events: none;
             transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1), transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
         }
         #video-container.active #top-bar {
@@ -548,6 +548,39 @@
         .error-btn:hover {
             transform: scale(1.04); background: #e4e4e7;
         }
+        .error-btn-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; flex-wrap: wrap;
+        }
+        .error-btn-secondary {
+            background: transparent; color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: none;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .error-btn-secondary:hover {
+            background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5);
+        }
+        .error-btn-secondary svg {
+            width: 15px; height: 15px; fill: currentColor;
+            transition: transform 0.4s ease;
+        }
+        .error-btn-secondary.retrying svg {
+            animation: spin-retry 0.8s linear infinite;
+        }
+        @keyframes spin-retry {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mid-playback buffering indicator (reuses the loader spinner, smaller) */
+        #bufferSpinner {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            border: 4px solid rgba(255,255,255,0.08); border-top: 4px solid var(--brand-primary);
+            border-radius: 50%; width: 42px; height: 42px; animation: spin 0.9s linear infinite;
+            z-index: 6; opacity: 0; transition: opacity 0.15s ease;
+        }
+        #bufferSpinner.active { opacity: 1; }
 
         /* Adaptive Tablet and Mobile Responsive Layouts */
         @media (max-width: 900px), (pointer: coarse) {
@@ -566,6 +599,7 @@
 
 <div id="video-container" class="active">
     <div id="loader"></div>
+    <div id="bufferSpinner"></div>
     <video id="video" crossorigin="anonymous" playsinline webkit-playsinline></video>
 
     <!-- Custom 404 Error Overlay -->
@@ -575,7 +609,13 @@
             <h1 class="error-code">404</h1>
             <p class="error-msg">Stream Offline</p>
             <p class="error-sub">We could not establish a connection to this server. Try switching to an alternative backup source provider.</p>
-            <button class="error-btn" id="errorSwitchBtn" type="button">Try Switching Provider</button>
+            <div class="error-btn-row">
+                <button class="error-btn error-btn-secondary" id="errorRetryBtn" type="button">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    <span id="errorRetryBtnLabel">Refresh</span>
+                </button>
+                <button class="error-btn" id="errorSwitchBtn" type="button">Try Switching Provider</button>
+            </div>
         </div>
     </div>
 
@@ -626,20 +666,23 @@
         <div class="party-panel-header">
             <div>
                 <div class="party-panel-title">Watch Party</div>
-                <div class="party-panel-subtitle" id="partyPanelSubtitle">Share this link to watch together</div>
+                <div class="party-panel-subtitle" id="partyPanelSubtitle">Invite friends with this 5-letter code</div>
             </div>
             <button class="party-panel-close" id="partyPanelClose" type="button" aria-label="Close">×</button>
         </div>
         <div class="party-panel-body">
-            <div class="party-link-row">
-                <input class="party-link-input" id="partyLinkInput" type="text" readonly value="">
-                <button class="party-copy-btn" id="partyCopyBtn" type="button">Copy</button>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:0.75rem; color:var(--brand-secondary); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Party Code</span>
+                <div class="party-link-row">
+                    <input class="party-link-input" id="partyLinkInput" type="text" readonly value="" style="font-size:1.15rem; font-weight:800; text-align:center; letter-spacing:4px;">
+                    <button class="party-copy-btn" id="partyCopyBtn" type="button">Copy Code</button>
+                </div>
             </div>
             <div class="party-members-row hidden" id="partyMembersRow">
                 <span class="party-dot"></span>
                 <span id="partyMembersText">1 watching</span>
             </div>
-            <div class="party-panel-hint">Everyone with this link sees the same play, pause, and seek in sync.</div>
+            <div class="party-panel-hint">Friends can enter this code at <strong>/join</strong> to sync play, pause, and seek in real time.</div>
         </div>
     </div>
 
@@ -932,6 +975,9 @@
     // Unique Custom 404 Layout Elements
     const errorOverlay = document.getElementById('errorOverlay');
     const errorSwitchBtn = document.getElementById('errorSwitchBtn');
+    const errorRetryBtn = document.getElementById('errorRetryBtn');
+    const errorRetryBtnLabel = document.getElementById('errorRetryBtnLabel');
+    const bufferSpinner = document.getElementById('bufferSpinner');
 
     // Setup Titles
     const urlParams = new URLSearchParams(window.location.search);
@@ -1116,6 +1162,7 @@
 
     function hideControls() {
         if (isHoveringControls || isSettingsOpen) return;
+        if (!errorOverlay.classList.contains('hidden')) return; // keep Sources button visible during a stream error
         if (!video.paused) {
             videoContainer.classList.remove('active');
             document.body.style.cursor = "none";
@@ -1562,14 +1609,46 @@
 
     function showErrorOverlay() {
         loader.classList.add('hidden');
+        bufferSpinner.classList.remove('active');
         errorOverlay.classList.remove('hidden');
         video.style.filter = "brightness(0.25) blur(8px)";
         clearInterval(progressInterval);
+        // Keep the top bar (Sources button) visible & interactive while the error is shown
+        videoContainer.classList.add('active');
+        clearTimeout(controlsTimeout);
+        document.body.style.cursor = "default";
     }
 
     function hideErrorOverlay() {
         errorOverlay.classList.add('hidden');
         video.style.filter = "none";
+        resetControlsTimer();
+    }
+
+    // Reload the currently active source in place, preserving playback position
+    // (used by the Refresh button on the 404 overlay).
+    async function retryCurrentSource() {
+        if (errorRetryBtn.classList.contains('retrying')) return;
+        errorRetryBtn.classList.add('retrying');
+        errorRetryBtnLabel.textContent = 'Retrying…';
+
+        const retryUrl = currentPlaybackUrl || streamUrl;
+        const resumeAt = video.currentTime || getSavedResumeTime() || 0;
+        stallSeconds = 0;
+        lastKnownTime = -1;
+
+        hideErrorOverlay();
+
+        try {
+            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+            await loadHLS(retryUrl, resumeAt, true);
+        } catch (e) {
+            console.error(e);
+            showErrorOverlay();
+        } finally {
+            errorRetryBtn.classList.remove('retrying');
+            errorRetryBtnLabel.textContent = 'Refresh';
+        }
     }
 
     async function loadHLS(url, startTime = 0, playAfterLoad = true) {
@@ -1728,6 +1807,11 @@
     let partyRoomId = urlParams.get('party') || null;
     let partySuppressBroadcast = false;
     let partySuppressTimeout = null;
+    // True only when THIS client just created the room via the "Watch Party" button
+    // (as opposed to joining one from a shared ?party= link). Used to stop the
+    // server's brand-new-room state (position 0, paused) from snapping the host's
+    // own in-progress playback back to the start.
+    let partyIsHost = !urlParams.get('party');
 
     function partyShowToast(text) {
         partyToast.textContent = text;
@@ -1736,11 +1820,12 @@
         partyToast._t = setTimeout(() => partyToast.classList.remove('show'), 2200);
     }
 
-    function partyBuildLink(roomId) {
-        const params = new URLSearchParams(window.location.search);
-        params.set('party', roomId);
-        return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    function partyBuildJoinLink(code) {
+        return `${window.location.origin}/join?code=${code}`;
     }
+
+
+
 
     function partySend(type, position) {
         if (partySocket && partySocket.readyState === WebSocket.OPEN) {
@@ -1788,7 +1873,12 @@
 
             if (msg.type === 'welcome') {
                 partyUpdateMembers(msg.members || 1);
-                if (typeof msg.position === 'number') {
+                if (partyIsHost) {
+                    // We created this room — don't get snapped back to the server's
+                    // fresh-room default (position 0). Instead, broadcast our current
+                    // position/state so anyone who joins syncs to where we actually are.
+                    partySend(video.paused ? 'pause' : 'play', video.currentTime || 0);
+                } else if (typeof msg.position === 'number') {
                     partyApplyRemoteState(!!msg.playing, msg.position);
                 }
             } else if (msg.type === 'members') {
@@ -1812,22 +1902,36 @@
         }, 6000);
     }
 
+
     function partyOpenPanelForRoom(roomId) {
-        const link = partyBuildLink(roomId);
-        partyLinkInput.value = link;
-        partyPanelSubtitle.textContent = 'Share this link to watch together';
+        partyLinkInput.value = roomId.toUpperCase();
+        partyPanelSubtitle.textContent = `Invite friends with code: ${roomId.toUpperCase()}`;
         partyPanel.classList.add('open');
     }
 
     function partyStart() {
-        if (partyRoomId) {
-            partyOpenPanelForRoom(partyRoomId);
-            return;
-        }
-        fetch('/api/party/new')
+            if (partyRoomId) {
+                partyOpenPanelForRoom(partyRoomId);
+                return;
+            }
+            
+            fetch('/api/party/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: metaTitle || topLeftTitle.textContent,
+                    season: metaSeason,
+                    episode: metaEpisode,
+                    year: metaYear,
+                    logo: metaLogo,
+                    synopsis: metaSynopsis,
+                    is_live: IS_LIVE,
+                    player_path: window.location.pathname + window.location.search
+                })
+            })
             .then(res => res.json())
             .then(data => {
-                partyRoomId = data.room;
+                partyRoomId = data.room || data.code;
                 const params = new URLSearchParams(window.location.search);
                 params.set('party', partyRoomId);
                 history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
@@ -1835,7 +1939,8 @@
                 partyOpenPanelForRoom(partyRoomId);
             })
             .catch(() => partyShowToast('Could not start watch party'));
-    }
+        }
+
 
     partyToggle.addEventListener('click', partyStart);
 
@@ -2115,6 +2220,23 @@
         }
     });
 
+    // --- Mid-playback Buffering Indicator ---
+    // Fires whenever the browser has to pause for more data (network hiccups,
+    // quality switches, seeks). Distinct from the initial #loader, which only
+    // covers the very first load / explicit source switches.
+    function showBufferSpinner() {
+        if (!errorOverlay.classList.contains('hidden')) return;
+        bufferSpinner.classList.add('active');
+    }
+    function hideBufferSpinner() {
+        bufferSpinner.classList.remove('active');
+    }
+    video.addEventListener('waiting', showBufferSpinner);
+    video.addEventListener('stalled', showBufferSpinner);
+    video.addEventListener('playing', hideBufferSpinner);
+    video.addEventListener('canplay', hideBufferSpinner);
+    video.addEventListener('pause', hideBufferSpinner);
+
     // --- Volume & Keyboard Controls ---
     function updateVolumeUI() {
         if(video.muted || video.volume === 0) {
@@ -2226,6 +2348,9 @@
     errorSwitchBtn.addEventListener('click', () => {
         window.parent.postMessage({ type: 'SWITCH_PROVIDER' }, '*');
     });
+
+    // Retry (refresh) button inside the 404 overlay — reloads the same source in place
+    errorRetryBtn.addEventListener('click', retryCurrentSource);
 
     // Capture auto-switch cycle instructions dispatched from parent shell
     window.addEventListener('message', (event) => {
