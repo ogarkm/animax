@@ -454,6 +454,45 @@
             box-shadow: 0 0 12px rgba(143, 231, 236, 0.6);
         }
 
+        .availability-notice {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: -8px 6% 32px;
+            padding: 12px 16px;
+            border: 1px solid rgba(143, 231, 236, 0.25);
+            border-radius: 10px;
+            background: rgba(143, 231, 236, 0.07);
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .availability-notice i {
+            color: var(--brand, #8FE7EC);
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .availability-notice strong {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .btn-premium.coming-soon {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .btn-premium.coming-soon:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
         /* ==================================================================
            QUICK ACCESS STRIP — Floating Pills Overlapping Hero
            ================================================================== */
@@ -975,7 +1014,7 @@
                 <p class="hero-description" id="hero-desc"></p>
                 
                 <div class="hero-btn-row">
-                    <a id="hero-play-btn" class="btn-premium primary">
+                    <a id="hero-play-btn" class="btn-premium primary" aria-disabled="false">
                         <i class="ph-fill ph-play"></i> Watch Now
                     </a>
                     <a id="hero-detail-btn" class="btn-premium secondary">
@@ -987,6 +1026,11 @@
             </div>
         </div>
     </section>
+
+    <aside class="availability-notice" role="status">
+        <i class="ph ph-info"></i>
+        <span><strong>Anime and manga playback are coming soon.</strong> You can still explore the catalog and view details.</span>
+    </aside>
 
     <!-- 4. Continue Watching Shelf -->
     <section class="shelf-section" id="continue-watching-section" style="display: none;">
@@ -1178,7 +1222,14 @@
                     ${item.release_year ? `<span class="hero-badge">${item.release_year}</span>` : '<span class="hero-badge">2026</span>'}
                 `;
 
-                document.getElementById('hero-play-btn').onclick = () => handleMediaAction(item.id, 'PLAY');
+                const isComingSoon = item.type === 'anime' || item.type === 'manga';
+                const playButton = document.getElementById('hero-play-btn');
+                playButton.classList.toggle('coming-soon', isComingSoon);
+                playButton.setAttribute('aria-disabled', String(isComingSoon));
+                playButton.innerHTML = isComingSoon
+                    ? '<i class="ph ph-clock"></i> Coming soon...'
+                    : '<i class="ph-fill ph-play"></i> Watch Now';
+                playButton.onclick = isComingSoon ? (event) => event.preventDefault() : () => handleMediaAction(item.id, 'PLAY');
                 document.getElementById('hero-detail-btn').onclick = () => handleMediaAction(item.id, 'DETAIL');
 
                 const dots = document.querySelectorAll('.hero-dot');

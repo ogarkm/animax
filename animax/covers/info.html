@@ -197,6 +197,42 @@
             background: rgba(255, 255, 255, 0.12);
         }
 
+        .availability-notice {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            padding: 12px 16px;
+            border: 1px solid rgba(143, 231, 236, 0.25);
+            border-radius: 10px;
+            background: rgba(143, 231, 236, 0.07);
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .availability-notice i {
+            color: var(--accent);
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .availability-notice strong {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .btn-primary.coming-soon {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            cursor: default;
+        }
+
+        .btn-primary.coming-soon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         /* ── Split Layout Content Body ────────────────────────── */
         .info-body-grid {
             padding: 48px max(4vw, 24px) 80px;
@@ -648,6 +684,7 @@
 
         function renderPage(media) {
             const hasEpisodes = media.episodes && media.episodes.length > 0;
+            const isComingSoon = media.type === 'anime' || media.type === 'manga';
             const target = document.getElementById('media-content-target');
             const displayType = getDisplayType(media);
             const hasTrailer = media.trailer_url && media.trailer_url.trim() !== "";
@@ -684,9 +721,9 @@
 
                         <!-- Action Bar -->
                         <div class="action-bar">
-                            <button class="btn-primary btn-tactile" onclick="triggerPlayback(${hasEpisodes ? 'true' : 'false'})">
-                                <i class="ph-fill ph-play"></i>
-                                <span>Watch Now</span>
+                            <button class="btn-primary btn-tactile${isComingSoon ? ' coming-soon' : ''}"${isComingSoon ? ' disabled aria-disabled="true"' : ` onclick="triggerPlayback(${hasEpisodes ? 'true' : 'false'})"`}>
+                                <i class="${isComingSoon ? 'ph ph-clock' : 'ph-fill ph-play'}"></i>
+                                <span>${isComingSoon ? 'Coming soon...' : 'Watch Now'}</span>
                             </button>
                             ${hasTrailer ? `
                                 <button class="btn-secondary btn-tactile" onclick="openTrailer('${media.trailer_url}')">
@@ -700,6 +737,15 @@
                         </div>
                     </div>
                 </div>
+
+                ${isComingSoon ? `
+                    <div class="info-body-grid">
+                        <div class="availability-notice" role="status">
+                            <i class="ph ph-info"></i>
+                            <span><strong>${media.type === 'manga' ? 'Manga' : 'Anime'} playback is coming soon.</strong> You can still explore the catalog and view details.</span>
+                        </div>
+                    </div>
+                ` : ''}
 
                 <!-- Info Grid Body -->
                 <div class="info-body-grid">
