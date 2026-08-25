@@ -662,6 +662,7 @@ def _build_speedracelight_params(
     episode: Optional[int] = None,
     seed: Optional[str] = None,
     enc: str = "2",
+    is_dub: bool = False,
 ) -> dict:
     """Build the Speedracelight request params for the encrypted sources endpoint."""
     params = {}
@@ -681,7 +682,17 @@ def _build_speedracelight_params(
     params["enc"] = enc
     if seed:
         params["seed"] = seed
-        
+
+    # NOTE: unverified against live traffic. Speedracelight's own param naming
+    # is camelCase (mediaType/episodeId/seasonId), so "dub" is the closest
+    # guess. If sources still come back in the wrong language after this,
+    # capture a real request from the video player and check the actual
+    # param name/value it sends for dub vs sub — this may need to change to
+    # "audio", "isDub", "lang", etc., or the upstream may not support
+    # filtering at request time at all (in which case the response-side
+    # language sort in fetch_and_decrypt_stream is what actually matters).
+    params["dub"] = "true" if is_dub else "false"
+
     return params
 
 
@@ -704,6 +715,7 @@ async def fetch_and_decrypt_stream(
     year: Optional[int] = None,
     imdb_id: Optional[str] = None,
     enc: str = "2",
+    is_dub: bool = False,
 ) -> dict:
     """Fetches, decrypts, auto-registers, and processes Videasy streams."""
     logger.info(
@@ -760,6 +772,7 @@ async def fetch_and_decrypt_stream(
         episode=episode,
         seed=seed,
         enc=enc,
+        is_dub=is_dub,
     )
 
     providers = ["mb-flix", "cdn", "downloader2", "1movies", "m4uhd"]
@@ -844,7 +857,25 @@ async def fetch_and_decrypt_stream(
     result_data = dec_json.get("result", {})
     sources = result_data.get("sources", [])
     subtitles = result_data.get("subtitles", [])
-    
+
+    # Language/dub tokens that mean "English dub" vs "Japanese/original sub".
+    # We don't know for certain which field name (if any) the upstream uses
+    # per-source, so this checks every plausible one defensively rather than
+    # assuming a single schema.
+    DUB_HINTS = {"en", "eng", "english", "dub", "dubbed"}
+    SUB_HINTS = {"ja", "jp", "jpn", "japanese", "sub", "subbed", "original"}
+
+    def _source_is_dub(s: dict) -> Optional[bool]:
+        raw = s.get("language") or s.get("lang") or s.get("audio") or s.get("type") or s.get("track")
+        if not raw:
+            return None
+        raw = str(raw).strip().lower()
+        if raw in DUB_HINTS:
+            return True
+        if raw in SUB_HINTS:
+            return False
+        return None
+
     processed_sources = []
     for s in sources:
         raw_url = s.get("url")
@@ -860,9 +891,19 @@ async def fetch_and_decrypt_stream(
             token = register_stream(normalized)
             processed_sources.append({
                 "quality": quality,
-                "url": f"/hls/{token}/index.m3u8"
+                "url": f"/hls/{token}/index.m3u8",
+                "is_dub": _source_is_dub(s),
             })
-            
+
+    # If any source actually carries a recognizable language marker, put
+    # sources matching the requested audio first. If none of them do (the
+    # upstream schema doesn't expose language at all, or it's a single-track
+    # response), leave the original order untouched rather than guessing.
+    if any(s["is_dub"] is not None for s in processed_sources):
+        processed_sources.sort(
+            key=lambda s: 0 if s["is_dub"] == is_dub else (1 if s["is_dub"] is None else 2)
+        )
+
     return {
         "status": 200,
         "season and episode": {"seasonId": season, "episodeId": episode},

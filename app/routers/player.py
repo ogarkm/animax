@@ -13,10 +13,14 @@ from typing import AsyncIterator, Optional
 from urllib.parse import quote_plus
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
+from app.core.database import get_cache_db, get_mapping_db
+from app.routers.discovery import get_media_details
 from app.services import player_proxy as pp
 
 logger = logging.getLogger("animax-player-router")
@@ -552,6 +556,40 @@ async def fetch_and_decrypt(
     )
 
 
+@router.get("/api/player/episodes/{media_id}")
+async def get_player_episodes(
+    media_id: str,
+    db: Session = Depends(get_cache_db),
+    map_db: Session = Depends(get_mapping_db)
+) -> dict:
+    """Returns structured seasons and episode list for player episode & season switcher."""
+    try:
+        media_details = await get_media_details(media_id=media_id, db=db, map_db=map_db)
+        if isinstance(media_details, BaseModel):
+            data = media_details.model_dump()
+        elif isinstance(media_details, dict):
+            data = media_details
+        else:
+            data = {}
+
+        return {
+            "media_id": media_id,
+            "title": data.get("title", ""),
+            "type": data.get("type", "movie"),
+            "seasons": data.get("seasons", []),
+            "episodes": data.get("episodes", []),
+        }
+    except Exception as e:
+        logger.warning("Unable to fetch player episodes for %s: %s", media_id, e)
+        return {
+            "media_id": media_id,
+            "title": "",
+            "type": "movie",
+            "seasons": [],
+            "episodes": [],
+        }
+
+
 # --- CDN Live TV & Sports ---
 
 @router.get("/cdnlivetv/resolve")
@@ -739,8 +777,16 @@ async def ui_player_stream_general(
     seasonId: Optional[int] = Query(None, alias="seasonId"),
     episodeId: Optional[int] = Query(None, alias="episodeId"),
     is_live: bool = Query(False),
+    stream_sources: Optional[str] = Query(None),
 ):
     """Serves the Unified Player UI for direct streams, payloads, anime, or live feeds."""
+    parsed_sources: list[dict] = []
+    if stream_sources:
+        try:
+            parsed_sources = pp._parse_stream_sources_payload(stream_sources)
+        except Exception as exc:
+            logger.warning("Unable to parse stream sources for /player/stream: %s", exc)
+
     return templates.TemplateResponse(
         request,
         "player.html",
@@ -754,7 +800,7 @@ async def ui_player_stream_general(
             "is_live": is_live,
             "season_id": seasonId,
             "episode_id": episodeId,
-            "stream_sources": [],
+            "stream_sources": parsed_sources,
             "meta_title": title,
             "meta_logo": logo,
             "meta_synopsis": synopsis,

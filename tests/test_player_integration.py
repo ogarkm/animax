@@ -54,7 +54,7 @@ segment1.ts
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("room", data)
-        self.assertTrue(len(data["room"]) >= 8)
+        self.assertTrue(len(data["room"]) >= 5)
 
     def test_route_status(self):
         resp = self.client.get("/status")

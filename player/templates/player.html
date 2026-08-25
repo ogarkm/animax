@@ -119,16 +119,23 @@
         }
         
         .top-title-group {
-            display: flex; flex-direction: column; min-width: 0; gap: 2px;
-            padding-top: 4px;
+            display: flex; flex-direction: column; justify-content: center; min-width: 0; gap: 2px;
+            max-width: min(60vw, 340px);
+            padding: 10px 18px;
+            border-radius: 999px;
+            border: 1px solid var(--border-glass);
+            background: rgba(12, 12, 12, 0.45);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.3);
         }
         .top-title { 
-            font-size: 1.4rem; font-weight: 700; color: white; white-space: nowrap; 
-            overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 12px rgba(0,0,0,0.8); letter-spacing: -0.2px; 
+            font-size: 1rem; font-weight: 700; color: white; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; 
         }
         .top-subtitle { 
-            font-size: 0.85rem; color: #d4d4d4; font-weight: 500;
-            letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); 
+            font-size: 0.74rem; color: var(--brand-secondary); font-weight: 500;
+            letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         /* Premium Floating Bottom Pill Bar */
@@ -412,6 +419,50 @@
         }
         .stream-badge.active { background: white; color: black; }
 
+        /* Episodes Drawer & Season Switcher */
+        .episodes-menu {
+            position: absolute; top: 80px; right: 4%; z-index: 35;
+            width: min(440px, calc(100vw - 30px)); max-height: min(520px, 75vh);
+            background: var(--bg-glass-heavy); border: 1px solid var(--border-glass);
+            border-radius: 18px; overflow: hidden; display: none;
+            box-shadow: 0 20px 48px rgba(0,0,0,0.65); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .episodes-menu.open { display: flex; flex-direction: column; }
+        .season-pill-container {
+            display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto;
+            border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);
+            scrollbar-width: none;
+            min-width: 0; flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .season-pill-container::-webkit-scrollbar { display: none; }
+        .season-pill {
+            padding: 5px 12px; background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            font-size: 0.8rem; font-weight: 600; color: #d4d4d4; cursor: pointer;
+            white-space: nowrap; flex-shrink: 0; transition: all 0.2s ease;
+        }
+        .season-pill.active, .season-pill:hover {
+            background: rgba(255,255,255,0.22); color: #fff; border-color: rgba(255,255,255,0.35);
+        }
+        .episode-card-item {
+            width: 100%; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; background: rgba(255,255,255,0.03);
+            padding: 10px; color: white; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            transition: all 0.2s ease; box-sizing: border-box;
+        }
+        .episode-card-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+        .episode-card-item.active { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.14); }
+        .ep-card-thumb-wrap {
+            width: 84px; height: 48px; border-radius: 8px; overflow: hidden; background: #111; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.06);
+        }
+        .ep-card-thumb { width: 100%; height: 100%; object-fit: cover; }
+        .ep-card-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+        .ep-card-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+        .ep-card-sub { font-size: 0.74rem; color: var(--brand-secondary); }
+        .filler-tag { font-size: 0.62rem; background: #eab308; color: #000; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 5px; }
+
         .settings-menu {
             position: absolute; right: 4%; bottom: 92px; width: 280px;
             background: var(--bg-glass-heavy); border-radius: 16px; overflow: hidden;
@@ -649,6 +700,10 @@
             </div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
+            <button class="stream-menu-toggle hidden" id="episodesBtn" title="Episodes & Seasons" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+                <span>Episodes</span>
+            </button>
             <button class="party-toggle" id="partyToggle" title="Watch Party" type="button">
                 <span class="party-dot"></span>
                 <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -698,7 +753,24 @@
             </div>
             <button class="stream-menu-close" id="streamMenuClose" type="button" aria-label="Close stream menu">×</button>
         </div>
+        <div class="season-pill-container" id="audioPrefToggle">
+            <button type="button" class="season-pill" id="audioPrefSub" data-audio="sub">SUB (Original)</button>
+            <button type="button" class="season-pill" id="audioPrefDub" data-audio="dub">DUB</button>
+        </div>
         <div class="stream-menu-list" id="streamMenuList"></div>
+    </div>
+
+    <!-- Episodes & Seasons Menu Drawer -->
+    <div class="episodes-menu" id="episodesMenu">
+        <div class="stream-menu-header">
+            <div>
+                <div class="stream-menu-title" id="episodesMenuTitle">Episodes</div>
+                <div class="stream-menu-subtitle" id="episodesMenuSubtitle">Seasons & Episode List</div>
+            </div>
+            <button class="stream-menu-close" id="episodesMenuClose" type="button" aria-label="Close episodes menu">×</button>
+        </div>
+        <div class="season-pill-container" id="seasonPillContainer"></div>
+        <div class="stream-menu-list" id="episodeCardsList"></div>
     </div>
 
     <!-- Main Pill-shaped Control Bar -->
@@ -720,6 +792,12 @@
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
                     <text x="12" y="16" text-anchor="middle" font-size="6" font-family="Arial" font-weight="bold">10</text>
+                </svg>
+            </button>
+
+            <button class="btn hidden" id="nextEpBtn" aria-label="Next Episode" title="Next Episode">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
                 </svg>
             </button>
 
@@ -901,7 +979,19 @@
     const META_YEAR = "{{ meta_year|default('') }}";
     const META_IMDB_ID = "{{ meta_imdb_id|default('') }}";
     const initialStreamsEl = document.getElementById('initial-stream-sources');
-    const INITIAL_STREAM_SOURCES = initialStreamsEl ? JSON.parse(initialStreamsEl.textContent || '[]') : [];
+    let INITIAL_STREAM_SOURCES = [];
+    if (initialStreamsEl) {
+        try {
+            INITIAL_STREAM_SOURCES = JSON.parse(initialStreamsEl.textContent || '[]');
+        } catch (e) {
+            // If this fires, the literal template tags expression above never actually got rendered 
+            // (e.g. this route served player.html as a raw/static file instead of via TemplateResponse),
+            // so the literal tags landed inside the script tag and broke JSON.parse right after the first "{". 
+            // Fail safe instead of taking down the whole player.
+            console.error('Failed to parse initial stream sources — verify this route renders player.html through the Jinja template engine:', e);
+            INITIAL_STREAM_SOURCES = [];
+        }
+    }
     
     const video = document.getElementById('video');
     const playBtn = document.getElementById('playPauseBtn');
@@ -1033,6 +1123,7 @@
 
     const STORAGE_PREFIX = 'animax_player';
     const subtitlePrefKey = `${STORAGE_PREFIX}:subtitle_pref`;
+    const audioPrefKey = `${STORAGE_PREFIX}:audio_pref`;
 
     function getResumeStorageKey() {
         if (IS_LIVE || !TMDB_ID || TMDB_ID === 'None') return null;
@@ -1070,6 +1161,40 @@
         if (!code) return;
         localStorage.setItem(subtitlePrefKey, code);
     }
+
+    // Audio preference is 'sub' (original/Japanese track) or 'dub' (localized dub
+    // track). This is independent from the subtitle preference above — you can
+    // watch a dub with subtitles on, or the original audio with no subtitles.
+    function getPreferredAudio() {
+        return localStorage.getItem(audioPrefKey) || 'sub';
+    }
+
+    function savePreferredAudio(pref) {
+        if (pref !== 'sub' && pref !== 'dub') return;
+        localStorage.setItem(audioPrefKey, pref);
+        updateAudioToggleUI();
+    }
+
+    function updateAudioToggleUI() {
+        const pref = getPreferredAudio();
+        const subBtn = document.getElementById('audioPrefSub');
+        const dubBtn = document.getElementById('audioPrefDub');
+        if (subBtn) subBtn.classList.toggle('active', pref === 'sub');
+        if (dubBtn) dubBtn.classList.toggle('active', pref === 'dub');
+    }
+
+    // Picks the offer/source matching the saved audio preference. Falls back to
+    // whatever is available so a missing dub for one episode doesn't break
+    // playback — it just can't honor the preference for that episode.
+    function pickPreferredSource(sources) {
+        if (!sources || !sources.length) return null;
+        const pref = getPreferredAudio();
+        const wantsDub = pref === 'dub';
+        const match = sources.find((s) => typeof s.dub === 'boolean' && s.dub === wantsDub);
+        return match || sources[0];
+    }
+
+    updateAudioToggleUI();
 
     // Adapt Controls Layout based on LIVE vs VOD content status
     if (IS_LIVE) {
@@ -1245,9 +1370,31 @@
         if (!normalizedUrl) return;
         activeStreamSourceId = source.id || normalizedUrl;
         currentPlaybackUrl = normalizedUrl;
+        // Manually picking a source is an explicit signal of audio intent —
+        // remember it so the next episode opens with the same sub/dub choice
+        // instead of silently reverting to whatever offer came back first.
+        if (typeof source.dub === 'boolean') {
+            savePreferredAudio(source.dub ? 'dub' : 'sub');
+        }
         renderStreamMenu();
         await switchSource(normalizedUrl);
         streamMenu.classList.remove('open');
+    }
+
+    // Quick SUB/DUB toggle at the top of the Stream Sources menu. Switches to a
+    // matching source for the CURRENT episode immediately if one is available.
+    document.getElementById('audioPrefSub')?.addEventListener('click', () => handleAudioToggle('sub'));
+    document.getElementById('audioPrefDub')?.addEventListener('click', () => handleAudioToggle('dub'));
+
+    function handleAudioToggle(pref) {
+        savePreferredAudio(pref);
+        const wantsDub = pref === 'dub';
+        const match = streamSources.find((s) => typeof s.dub === 'boolean' && s.dub === wantsDub);
+        if (match) {
+            selectStreamSource(match);
+        } else {
+            console.warn(`No ${pref.toUpperCase()} source available for this episode from any provider yet — preference saved for future episodes.`);
+        }
     }
 
     async function resolveManifestUrl(url) {
@@ -1378,6 +1525,7 @@
                 activeStreamSourceId = streamSources[0]?.id || null;
                 currentPlaybackUrl = normalizeStreamTarget(streamUrl);
                 renderStreamMenu();
+                updateAudioToggleUI();
 
                 qualityList.innerHTML = '';
                 sources.forEach((s, idx) => {
@@ -1571,6 +1719,7 @@
             activeStreamSourceId = streamSources.find((source) => source.url === streamUrl)?.id || streamSources[0]?.id || null;
             currentPlaybackUrl = normalizeStreamTarget(streamUrl);
             renderStreamMenu();
+            updateAudioToggleUI();
 
             const resumeTime = getSavedResumeTime();
             const resolvedStreamUrl = await resolveManifestUrl(streamUrl);
@@ -1580,8 +1729,241 @@
             if (IS_LIVE) {
                 await resolveLiveMetadata();
             }
+
+            let derivedMediaId = urlParams.get('media_id') || urlParams.get('id') || (TMDB_ID && TMDB_ID !== "None" ? `tt${TMDB_ID}` : null);
+            if (derivedMediaId) {
+                initPlayerEpisodes(derivedMediaId);
+            }
         } catch (e) { console.error(e); }
     }
+
+    // --- Episodes & Seasons Drawer System ---
+    const episodesBtn = document.getElementById('episodesBtn');
+    const nextEpBtn = document.getElementById('nextEpBtn');
+    const episodesMenu = document.getElementById('episodesMenu');
+    const episodesMenuClose = document.getElementById('episodesMenuClose');
+    const seasonPillContainer = document.getElementById('seasonPillContainer');
+    const episodeCardsList = document.getElementById('episodeCardsList');
+
+    let playerMediaId = null;
+    let allSeasons = [];
+    let allEpisodes = [];
+    let currentSeasonNum = parseInt(SEASON_ID || urlParams.get('seasonId') || urlParams.get('season') || '1');
+    let currentEpisodeNum = parseInt(EPISODE_ID || urlParams.get('episodeId') || urlParams.get('episode') || '1');
+    let currentAbsoluteNum = currentEpisodeNum;
+
+    if (episodesBtn) {
+        episodesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = episodesMenu.classList.toggle('open');
+            if (isOpen && streamMenu) streamMenu.classList.remove('open');
+            if (isOpen && settingsMenu) settingsMenu.classList.remove('open');
+        });
+    }
+
+    if (episodesMenuClose) {
+        episodesMenuClose.addEventListener('click', () => {
+            episodesMenu.classList.remove('open');
+        });
+    }
+
+    if (nextEpBtn) {
+        nextEpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playNextEpisode();
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (episodesMenu && !episodesMenu.contains(e.target) && (!episodesBtn || !episodesBtn.contains(e.target))) {
+            episodesMenu.classList.remove('open');
+        }
+    });
+
+    async function initPlayerEpisodes(mediaId) {
+        if (!mediaId) return;
+        playerMediaId = mediaId;
+        try {
+            const res = await fetch(`/api/player/episodes/${encodeURIComponent(mediaId)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            allSeasons = data.seasons || [];
+            allEpisodes = data.episodes || [];
+
+            if (allEpisodes.length > 0) {
+                if (episodesBtn) episodesBtn.classList.remove('hidden');
+                if (nextEpBtn) nextEpBtn.classList.remove('hidden');
+
+                const match = allEpisodes.find(e => 
+                    (e.season_number === currentSeasonNum && e.episode_number === currentEpisodeNum) ||
+                    e.absolute_number === currentEpisodeNum
+                );
+                if (match) {
+                    currentSeasonNum = match.season_number || currentSeasonNum;
+                    currentEpisodeNum = match.episode_number || currentEpisodeNum;
+                    currentAbsoluteNum = match.absolute_number || currentEpisodeNum;
+                }
+
+                renderSeasonPills();
+                renderEpisodeList(currentSeasonNum);
+            }
+        } catch (e) {
+            console.warn("Unable to initialize player episodes:", e);
+        }
+    }
+
+    function renderSeasonPills() {
+        if (!seasonPillContainer) return;
+        seasonPillContainer.innerHTML = '';
+        if (allSeasons.length <= 1) {
+            seasonPillContainer.style.display = 'none';
+            return;
+        }
+        seasonPillContainer.style.display = 'flex';
+
+        allSeasons.forEach(s => {
+            const pill = document.createElement('button');
+            pill.type = 'button';
+            pill.className = `season-pill${s.season_number === currentSeasonNum ? ' active' : ''}`;
+            pill.textContent = s.title || `Season ${s.season_number}`;
+            pill.addEventListener('click', () => {
+                currentSeasonNum = s.season_number;
+                [...seasonPillContainer.children].forEach(c => c.classList.remove('active'));
+                pill.classList.add('active');
+                renderEpisodeList(currentSeasonNum);
+            });
+            seasonPillContainer.appendChild(pill);
+        });
+    }
+
+    function renderEpisodeList(seasonNum) {
+        if (!episodeCardsList) return;
+        episodeCardsList.innerHTML = '';
+
+        const targetEps = allSeasons.length > 1
+            ? allEpisodes.filter(e => e.season_number === seasonNum)
+            : allEpisodes;
+
+        if (targetEps.length === 0) {
+            episodeCardsList.innerHTML = '<div class="stream-item"><div class="stream-item-main"><div class="stream-item-title">No episodes found</div></div></div>';
+            return;
+        }
+
+        targetEps.forEach(ep => {
+            const isActive = ep.episode_number === currentEpisodeNum && (allSeasons.length <= 1 || ep.season_number === currentSeasonNum);
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `episode-card-item${isActive ? ' active' : ''}`;
+
+            const thumb = ep.thumbnail_url || (META_LOGO && META_LOGO !== "None" ? META_LOGO : '');
+            const fillerTag = ep.is_filler ? '<span class="filler-tag">FILLER</span>' : '';
+
+            const absNum = ep.absolute_number || ep.episode_number;
+
+            card.innerHTML = `
+                <div class="ep-card-thumb-wrap">
+                    ${thumb ? `<img class="ep-card-thumb" src="${escapeHtml(thumb)}" alt="EP ${absNum}">` : `<span style="font-size:0.7rem;color:#888;">EP ${absNum}</span>`}
+                </div>
+                <div class="ep-card-info">
+                    <div class="ep-card-title">EP ${absNum}: ${escapeHtml(ep.title || 'Episode ' + absNum)}${fillerTag}</div>
+                    <div class="ep-card-sub">${allSeasons.length > 1 ? `Season ${ep.season_number} · ` : ''}Episode ${ep.episode_number}</div>
+                </div>
+                <div class="stream-badge ${isActive ? 'active' : ''}">${isActive ? 'PLAYING' : 'SELECT'}</div>
+            `;
+
+            card.addEventListener('click', () => {
+                if (episodesMenu) episodesMenu.classList.remove('open');
+                switchEpisode(ep);
+            });
+            episodeCardsList.appendChild(card);
+        });
+    }
+
+    async function switchEpisode(ep) {
+        if (!ep) return;
+        currentSeasonNum = ep.season_number || 1;
+        currentEpisodeNum = ep.episode_number || 1;
+        currentAbsoluteNum = ep.absolute_number || ep.episode_number || 1;
+        const targetMappedId = ep.mapped_id || playerMediaId;
+
+        if (loader) loader.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/sources/${encodeURIComponent(targetMappedId)}?episode=${currentAbsoluteNum}`);
+            if (!res.ok) throw new Error("Sources not found for episode");
+
+            const offers = await res.json();
+            if (!offers || offers.length === 0) throw new Error("No offers available");
+
+            const formattedSources = offers.map((offer, idx) => ({
+                id: `offer-${idx}-${offer.provider}`,
+                provider: (offer.provider || 'Provider').toUpperCase(),
+                server: `${(offer.provider || 'Server').toUpperCase()} (${offer.dub ? 'DUB' : 'SUB'})`,
+                quality: offer.quality || 'Auto',
+                title: `${offer.provider} ${offer.dub ? 'Dub' : 'Sub'}`,
+                dub: !!offer.dub,
+                type: offer.type,
+                url: offer.external_player_url || offer.url
+            }));
+
+            // Respect whatever sub/dub the user has previously chosen instead of
+            // always resetting to offers[0] (which is what made episode 2+ silently
+            // fall back to the original-language track even after picking DUB).
+            const selectedOffer = pickPreferredSource(formattedSources) || formattedSources[0];
+            const targetUrl = selectedOffer.url;
+
+            streamSources = formattedSources;
+            activeStreamSourceId = selectedOffer?.id || formattedSources[0]?.id || null;
+            renderStreamMenu();
+            updateAudioToggleUI();
+
+            if (topLeftSubtitle) {
+                topLeftSubtitle.textContent = `EP ${ep.episode_number}: ${ep.title || 'Episode ' + ep.episode_number}`;
+                topLeftSubtitle.style.display = 'block';
+            }
+
+            await switchSource(targetUrl);
+            renderEpisodeList(currentSeasonNum);
+
+            window.parent.postMessage({
+                type: 'EPISODE_CHANGED',
+                episode: ep.episode_number,
+                season: ep.season_number,
+                absolute_number: ep.absolute_number,
+                mapped_id: targetMappedId,
+                title: ep.title,
+                synopsis: ep.synopsis,
+                thumbnail_url: ep.thumbnail_url
+            }, '*');
+        } catch (e) {
+            console.error("Episode Switch Error:", e);
+            showErrorOverlay();
+        } finally {
+            if (loader) loader.classList.add('hidden');
+        }
+    }
+
+    function playNextEpisode() {
+        if (!allEpisodes || allEpisodes.length === 0) return;
+        const currentIdx = allEpisodes.findIndex(e => e.absolute_number === currentAbsoluteNum || (e.episode_number === currentEpisodeNum && e.season_number === currentSeasonNum));
+        if (currentIdx !== -1 && currentIdx + 1 < allEpisodes.length) {
+            switchEpisode(allEpisodes[currentIdx + 1]);
+        }
+    }
+
+    video.addEventListener('ended', () => {
+        if (!IS_LIVE && allEpisodes && allEpisodes.length > 0) {
+            window.parent.postMessage({
+                type: 'SHOW_TOAST',
+                message: 'Auto-playing next episode...',
+                icon: 'ph-play'
+            }, '*');
+            setTimeout(() => {
+                playNextEpisode();
+            }, 2500);
+        }
+    });
 
     // Attempt to automatically loop to the next server source on failure
     function attemptAutoSwitchSource() {
@@ -1910,6 +2292,7 @@
     }
 
     function partyStart() {
+            if (episodesMenu) episodesMenu.classList.remove('open');
             if (partyRoomId) {
                 partyOpenPanelForRoom(partyRoomId);
                 return;
@@ -2071,6 +2454,7 @@
     streamMenuToggle.addEventListener('click', (e) => {
         e.stopPropagation();
         streamMenu.classList.toggle('open');
+        if (episodesMenu) episodesMenu.classList.remove('open');
     });
     streamMenuClose.addEventListener('click', (e) => {
         e.stopPropagation();

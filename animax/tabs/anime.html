@@ -1353,11 +1353,14 @@
                     ${item.release_year ? `<span class="hero-badge">${item.release_year}</span>` : '<span class="hero-badge">2026</span>'}
                 `;
 
+                const isComingSoon = catalogType === 'manga' || item.type === 'manga';
                 const playButton = document.getElementById('hero-play-btn');
-                playButton.classList.add('coming-soon');
-                playButton.setAttribute('aria-disabled', 'true');
-                playButton.innerHTML = '<i class="ph ph-clock"></i> Coming soon...';
-                playButton.onclick = (event) => event.preventDefault();
+                playButton.classList.toggle('coming-soon', isComingSoon);
+                playButton.setAttribute('aria-disabled', String(isComingSoon));
+                playButton.innerHTML = isComingSoon
+                    ? '<i class="ph ph-clock"></i> Coming soon...'
+                    : '<i class="ph-fill ph-play"></i> Watch Now';
+                playButton.onclick = isComingSoon ? (event) => event.preventDefault() : () => handleMediaAction(item.id, 'PLAY');
                 document.getElementById('hero-detail-btn').onclick = () => handleMediaAction(item.id, 'DETAIL');
 
                 const dots = document.querySelectorAll('.hero-dot');

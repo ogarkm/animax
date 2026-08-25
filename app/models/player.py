@@ -6,6 +6,18 @@ class SourceType(str, Enum):
     IFRAME = "iframe"     # External embed
     INTERNAL = "internal" # Requires /api/player/payload extraction
 
+class MediaContext(BaseModel):
+    mapped_id: str
+    primary_title: str
+    romaji_title: Optional[str] = None
+    english_title: Optional[str] = None
+    synonyms: List[str] = Field(default_factory=list)
+    year: Optional[int] = None
+    mal_id: Optional[int] = None
+    anilist_id: Optional[int] = None
+    tmdb_tv_id: Optional[int] = None
+    tmdb_movie_id: Optional[int] = None
+
 # --- Endpoint 1 Response: /api/sources/{id} ---
 class SourceOffer(BaseModel):
     provider: str = Field(..., description="e.g., 'hianime', 'flixhq'")

@@ -28,9 +28,12 @@ async def get_sources(
     else:
         media_type = "all"
 
+    # Resolve context ONCE before broadcasting to all scrapers (sub & dub)
+    context = await provider_manager._resolve_media_context(mapped_id)
+
     # We search for BOTH Sub and Dub concurrently across all scrapers
-    sub_task = provider_manager.get_all_source_offers(mapped_id, episode, media_type, is_dub=False)
-    dub_task = provider_manager.get_all_source_offers(mapped_id, episode, media_type, is_dub=True)
+    sub_task = provider_manager.get_all_source_offers(mapped_id, episode, media_type, is_dub=False, context=context)
+    dub_task = provider_manager.get_all_source_offers(mapped_id, episode, media_type, is_dub=True, context=context)
     
     sub_offers, dub_offers = await asyncio.gather(sub_task, dub_task)
     all_offers = sub_offers + dub_offers

@@ -413,28 +413,90 @@
         }
 
         // ── Fire parallel backend resolution scraper call ──────────
+        let availableOffers = [];
+        let currentOfferIndex = 0;
+
         async function resolvePlaybackSources() {
             try {
                 const res = await fetch(`/api/sources/${encodeURIComponent(currentMediaId)}?episode=${currentEpisodeNum}`);
                 if (!res.ok) throw new Error("Could not fetch target source offers.");
 
-                const offers = await res.json();
-                if (!offers || offers.length === 0) {
+                availableOffers = await res.json();
+                if (!availableOffers || availableOffers.length === 0) {
                     throw new Error("No available streaming sources found.");
                 }
 
-                // Pick best offer
-                const selectedOffer = offers[0];
-
-                // Select external player URL microservice if mapped, otherwise fall back to internal
-                const targetStreamUrl = selectedOffer.external_player_url || selectedOffer.url;
-
-                initializeIframeStream(targetStreamUrl);
+                currentOfferIndex = 0;
+                loadOffer(currentOfferIndex);
             } catch (err) {
                 console.error("Source Resolution Failed:", err);
                 displayErrorState(err.message || "An issue occurred while compiling stream links.");
             }
         }
+
+        function loadOffer(index) {
+            if (!availableOffers || index < 0 || index >= availableOffers.length) return;
+            currentOfferIndex = index;
+            const selectedOffer = availableOffers[index];
+            let targetStreamUrl = selectedOffer.external_player_url || selectedOffer.url;
+
+            // Format all available provider offers into player.html menu payload
+            const formattedSources = availableOffers.map((offer, idx) => ({
+                id: `offer-${idx}-${offer.provider}`,
+                provider: (offer.provider || 'Provider').toUpperCase(),
+                server: `${(offer.provider || 'Server').toUpperCase()} (${offer.dub ? 'DUB' : 'SUB'})`,
+                quality: offer.quality || 'Auto',
+                title: `${offer.provider} ${offer.dub ? 'Dub' : 'Sub'}`,
+                type: offer.type,
+                url: offer.external_player_url || offer.url
+            }));
+
+            const sourcesPayload = encodeURIComponent(JSON.stringify(formattedSources));
+            const separator = targetStreamUrl.includes('?') ? '&' : '?';
+            targetStreamUrl = `${targetStreamUrl}${separator}stream_sources=${sourcesPayload}`;
+
+            initializeIframeStream(targetStreamUrl);
+        }
+
+        // Handle provider switch and episode change requests from child iframe
+        window.addEventListener('message', (event) => {
+            if (!event.data) return;
+            if (event.data.type === 'SWITCH_PROVIDER' || event.data.type === 'TRY_NEXT_PROVIDER') {
+                if (availableOffers.length > 1) {
+                    const nextIdx = (currentOfferIndex + 1) % availableOffers.length;
+                    loadOffer(nextIdx);
+                }
+            } else if (event.data.type === 'EPISODE_CHANGED') {
+                const ep = event.data;
+                // Gracefully update browser URL parameters without reloading page
+                const currentUrl = new URL(window.location.href);
+                if (ep.episode) currentUrl.searchParams.set('episode', ep.episode);
+                if (ep.season) currentUrl.searchParams.set('season', ep.season);
+                // Anime seasons can map to a different underlying id (AniList
+                // season-chain stitching in discovery.py), so keep the URL's
+                // id in sync too — otherwise a refresh mid-binge reloads the
+                // wrong season.
+                if (ep.mapped_id) currentUrl.searchParams.set('id', ep.mapped_id);
+                window.history.replaceState({}, '', currentUrl.toString());
+                if (ep.mapped_id) currentMediaId = ep.mapped_id;
+                if (ep.episode) currentEpisodeNum = ep.episode;
+
+                // Update info panel metadata, synopsis, and ambient backdrop —
+                // same elements/pattern as updateConsoleUI() uses on initial load.
+                const infoTarget = document.getElementById('episode-info-target');
+                if (infoTarget) {
+                    const labelText = ep.episode ? `Episode ${ep.episode}: ${ep.title || ''}` : '';
+                    infoTarget.innerHTML = `
+                        ${labelText ? `<div class="episode-label">${labelText}</div>` : ''}
+                        <p class="episode-synopsis">${ep.synopsis || ''}</p>
+                    `;
+                }
+                if (ep.thumbnail_url) {
+                    const ambientBg = document.getElementById('ambient-bg-underlay');
+                    if (ambientBg) ambientBg.style.backgroundImage = `url('${ep.thumbnail_url}')`;
+                }
+            }
+        });
 
         // ── Transition interface elements and mount iframe ─────
         function initializeIframeStream(streamUrl) {

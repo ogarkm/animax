@@ -5,9 +5,11 @@ from enum import Enum
 class MediaType(str, Enum):
     MOVIE = "movie"
     TV = "tv"
+    MOVIE_TV = "movie_tv"
     ANIME = "anime"
     MANGA = "manga"
     LIVETV = "livetv"
+    ALL = "all"
 
 class MediaStatus(str, Enum):
     RELEASING = "RELEASING"

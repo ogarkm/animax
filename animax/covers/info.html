@@ -249,7 +249,7 @@
             display: flex;
             flex-direction: column;
             gap: 48px;
-            min-width: 0; /* Prevents flex items from breaking layout boundaries */
+            min-width: 0;
         }
 
         .sidebar-col {
@@ -474,19 +474,26 @@
         }
 
         /* ── Recommendations Card ────────────────────────────── */
-        .poster-card {
+        .rec-card-wrap {
             width: 140px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .poster-card {
+            width: 100%;
             height: 200px;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
-            cursor: pointer;
-            flex-shrink: 0;
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: transform 0.25s var(--ease-out-expo), border-color 0.25s var(--ease-out-expo);
         }
 
-        .poster-card:hover {
+        .rec-card-wrap:hover .poster-card {
             transform: translateY(-4px);
             border-color: rgba(255, 255, 255, 0.15);
         }
@@ -495,6 +502,16 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .rec-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary, #ffffff);
+            text-align: center;
         }
 
         /* ── Shimmer Loaders ─────────────────────────────────── */
@@ -606,8 +623,10 @@
                 grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
                 gap: 14px;
             }
-            .poster-card {
+            .rec-card-wrap {
                 width: 120px;
+            }
+            .poster-card {
                 height: 172px;
             }
         }
@@ -648,10 +667,12 @@
         }
 
         function getDisplayType(media) {
+            const format = (media.format || media.sub_type || '').toUpperCase();
+            if (format === 'MOVIE' || media.type === 'movie' || media.id.startsWith('tm')) return 'Movie';
+            if (format === 'OVA') return 'OVA';
             if (media.id.startsWith('a') || media.type === 'anime') return 'Anime';
             if (media.id.startsWith('tt') || media.type === 'tv') return 'TV Show';
-            if (media.id.startsWith('tm') || media.type === 'movie') return 'Movie';
-            return media.type;
+            return media.type || 'Media';
         }
 
         function formatRuntime(minutes) {
@@ -682,8 +703,10 @@
         }
 
         function renderPage(media) {
-            const hasEpisodes = media.episodes && media.episodes.length > 0;
-            const isComingSoon = media.type === 'anime' || media.type === 'manga';
+            const format = (media.format || media.sub_type || '').toUpperCase();
+            const isSingleEpisodeOrMovie = format === 'MOVIE' || format === 'OVA' || media.type === 'movie' || !media.episodes || media.episodes.length <= 1;
+            const hasEpisodes = !isSingleEpisodeOrMovie && media.episodes && media.episodes.length > 1;
+            const isComingSoon = media.type === 'manga';
             const target = document.getElementById('media-content-target');
             const displayType = getDisplayType(media);
             const hasTrailer = media.trailer_url && media.trailer_url.trim() !== "";
@@ -720,7 +743,7 @@
 
                         <!-- Action Bar -->
                         <div class="action-bar">
-                            <button class="btn-primary btn-tactile${isComingSoon ? ' coming-soon' : ''}"${isComingSoon ? ' disabled aria-disabled="true"' : ` onclick="triggerPlayback(${hasEpisodes ? 'true' : 'false'})"`}>
+                            <button class="btn-primary btn-tactile${isComingSoon ? ' coming-soon' : ''}"${isComingSoon ? ' disabled aria-disabled="true"' : ` onclick="triggerPlayback()"`}>
                                 <i class="${isComingSoon ? 'ph ph-clock' : 'ph-fill ph-play'}"></i>
                                 <span>${isComingSoon ? 'Coming soon...' : 'Watch Now'}</span>
                             </button>
@@ -741,7 +764,7 @@
                     <div class="info-body-grid">
                         <div class="availability-notice" role="status">
                             <i class="ph ph-info"></i>
-                            <span><strong>${media.type === 'manga' ? 'Manga' : 'Anime'} playback is coming soon.</strong> You can still explore the catalog and view details.</span>
+                            <span><strong>Manga reading is coming soon.</strong> You can still explore the catalog and view details.</span>
                         </div>
                     </div>
                 ` : ''}
@@ -758,7 +781,7 @@
                                 <p class="synopsis-text">${media.description || "No overview is currently available for this title."}</p>
                             </div>
 
-                            <!-- Episodes (if any) -->
+                            <!-- Episodes (Only if multi-episode series) -->
                             ${hasEpisodes ? renderEpisodesTemplate(media) : ''}
 
                             <!-- Cast Shelf -->
@@ -825,14 +848,14 @@
                 </div>
             `;
 
-            if (media.seasons && media.seasons.length > 0 && media.episodes && media.episodes.length > 0) {
+            if (hasEpisodes && media.seasons && media.seasons.length > 0) {
                 const selector = document.getElementById('season-dropdown');
                 if (selector) {
                     selector.addEventListener('change', (e) => {
                         filterEpisodesBySeason(parseInt(e.target.value));
                     });
                     filterEpisodesBySeason(media.seasons[0].season_number);
-                } else {
+                } else if (media.episodes && media.episodes.length > 0) {
                     filterEpisodesBySeason(media.episodes[0].season_number);
                 }
             }
@@ -865,13 +888,13 @@
             return `
                 <div class="episode-card" 
                      data-season="${ep.season_number}" 
-                     onclick="playEpisode('${targetMappedId}', ${ep.absolute_number})">
+                     onclick="playEpisode('${targetMappedId}', ${ep.absolute_number || 1})">
                     <div class="ep-thumb-wrap">
                         <img class="ep-thumb" src="${ep.thumbnail_url || currentMedia.banner_url || ''}" loading="lazy" alt="">
-                        <span class="ep-number">EP ${ep.episode_number}</span>
+                        <span class="ep-number">EP ${ep.episode_number || 1}</span>
                     </div>
                     <div class="ep-card-body">
-                        <div class="ep-card-title">${ep.title || `Episode ${ep.episode_number}`}</div>
+                        <div class="ep-card-title">${ep.title || `Episode ${ep.episode_number || 1}`}</div>
                         <div class="ep-card-desc">${ep.synopsis || 'No synopsis available.'}</div>
                     </div>
                 </div>
@@ -886,10 +909,11 @@
             });
         }
 
-        function triggerPlayback(isSeries) {
-            if (isSeries && currentMedia.episodes && currentMedia.episodes.length > 0) {
+        function triggerPlayback() {
+            if (!currentMedia) return;
+            if (currentMedia.episodes && currentMedia.episodes.length > 0) {
                 const firstEp = currentMedia.episodes[0];
-                playEpisode(firstEp.mapped_id || currentMedia.id, firstEp.absolute_number);
+                playEpisode(firstEp.mapped_id || currentMedia.id, firstEp.absolute_number || 1);
             } else {
                 playEpisode(currentMedia.id, 1);
             }
@@ -909,7 +933,6 @@
         function getEmbedUrl(url) {
             if (!url) return '';
 
-            // Map generic YouTube share link formats
             const ytRegex = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const ytMatch = url.match(ytRegex);
 
@@ -917,7 +940,6 @@
                 return `https://www.youtube.com/embed/${ytMatch[2]}?autoplay=1`;
             }
 
-            // Map Vimeo formats
             const vimeoRegex = /vimeo\.com\/([0-9]+)/;
             const vimeoMatch = url.match(vimeoRegex);
             if (vimeoMatch) {
@@ -937,7 +959,6 @@
             if (modal && iframe) {
                 iframe.src = embedUrl;
                 modal.style.display = 'flex';
-                // Trigger transition reflow
                 setTimeout(() => {
                     modal.classList.add('active');
                 }, 10);
@@ -963,7 +984,6 @@
             }
         }
 
-        // Attach escape key binding to allow dismissing lightbox naturally
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const modal = document.getElementById('trailer-modal');
@@ -1005,8 +1025,11 @@
             }
 
             recTarget.innerHTML = filtered.map(item => `
-                <div class="poster-card" onclick="navigateParentToDetails('${item.id}')">
-                    <img class="poster-img" src="${item.poster_url || ''}" alt="${item.title}" loading="lazy">
+                <div class="rec-card-wrap" onclick="navigateParentToDetails('${item.id}')">
+                    <div class="poster-card">
+                        <img class="poster-img" src="${item.poster_url || ''}" alt="${item.title}" loading="lazy">
+                    </div>
+                    <div class="rec-title" title="${item.title}">${item.title}</div>
                 </div>
             `).join('');
         }
