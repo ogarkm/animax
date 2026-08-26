@@ -416,6 +416,23 @@
         let availableOffers = [];
         let currentOfferIndex = 0;
 
+        // Persisted SUB/DUB preference — same key/logic as player.html so a
+        // choice made in the player's Sources menu carries over here too
+        // (shared localStorage, same origin) and to future episode loads.
+        const DUB_PREF_KEY = 'animax_preferred_dub';
+        function getPreferredDub() {
+            try {
+                const v = localStorage.getItem(DUB_PREF_KEY);
+                return v === null ? null : v === 'true';
+            } catch (e) { return null; }
+        }
+        function pickOfferIndexByPreference(offers) {
+            const pref = getPreferredDub();
+            if (pref === null || !Array.isArray(offers)) return 0;
+            const idx = offers.findIndex(o => !!o.dub === pref);
+            return idx >= 0 ? idx : 0;
+        }
+
         async function resolvePlaybackSources() {
             try {
                 const res = await fetch(`/api/sources/${encodeURIComponent(currentMediaId)}?episode=${currentEpisodeNum}`);
@@ -426,7 +443,7 @@
                     throw new Error("No available streaming sources found.");
                 }
 
-                currentOfferIndex = 0;
+                currentOfferIndex = pickOfferIndexByPreference(availableOffers);
                 loadOffer(currentOfferIndex);
             } catch (err) {
                 console.error("Source Resolution Failed:", err);
@@ -448,6 +465,7 @@
                 quality: offer.quality || 'Auto',
                 title: `${offer.provider} ${offer.dub ? 'Dub' : 'Sub'}`,
                 type: offer.type,
+                dub: !!offer.dub,
                 url: offer.external_player_url || offer.url
             }));
 

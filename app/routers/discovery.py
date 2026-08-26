@@ -279,7 +279,7 @@ async def fetch_anilist_list_safe(format_type: str, sort_by: List[str], status: 
                 year = m.get("seasonYear") or (m.get("startDate", {}) or {}).get("year")
                 
                 cards.append(BaseMediaCard(
-                    id=f"{'m' if format_type == 'MANGA' else 'a'}{m['id']}",
+                    id=f"{'mg' if format_type == 'MANGA' else 'a'}{m['id']}",
                     title=m["title"]["english"] or m["title"]["romaji"],
                     poster_url=m["coverImage"]["extraLarge"],
                     banner_url=m["bannerImage"],
@@ -678,12 +678,20 @@ async def get_media_details(
                 exact_kitsu = None
                 
                 if prefix in ["m", "a"] or mapped_ids.get("tmdb_tv_id") or is_confirmed_anime:
+                    exact_anilist = mapper.get_anilist_id_for_tmdb_season(actual_raw_id, s_num)
                     exact_mal = mapper.get_mal_id_for_tmdb_season(actual_raw_id, s_num)
-                    if exact_mal:
+                    
+                    if exact_anilist:
+                        season_mapped_id = f"a{exact_anilist}"
+                        exact_kitsu = mapper.get_kitsu_id_from_anilist(exact_anilist)
+                    elif exact_mal:
                         season_mapped_id = f"m{exact_mal}"
                         exact_kitsu = mapper.get_kitsu_id_from_mal(exact_mal)
+                    elif is_confirmed_anime and mapped_ids.get("anilist_id"):
+                        season_mapped_id = f"a{mapped_ids['anilist_id']}"
+                        exact_kitsu = mapper.get_kitsu_id_from_anilist(mapped_ids['anilist_id']) or mapped_ids.get("kitsu_id")
                     elif is_confirmed_anime and root_mal_id:
-                        # No Fribb entry for this season — fall back to the root MAL ID so the
+                        # No Fribb entry for this season — fall back to the root Anime/MAL ID so the
                         # resolver still routes to AniDB (absolute episode numbers ensure correctness).
                         season_mapped_id = f"m{root_mal_id}"
                         exact_kitsu = mapper.get_kitsu_id_from_mal(root_mal_id)
@@ -769,7 +777,7 @@ async def get_media_details(
             rm = node.get("mediaRecommendation")
             if not rm: continue
             rec_type = rm.get("type", "ANIME")
-            prefix_rec = "m" if rec_type == "MANGA" else "a"
+            prefix_rec = "mg" if rec_type == "MANGA" else "a"
             recs_raw.append({
                 "id": f"{prefix_rec}{rm['id']}",
                 "title": rm.get("title", {}).get("english") or rm.get("title", {}).get("romaji"),
@@ -803,7 +811,7 @@ async def get_media_details(
 
             for idx, (s, eps) in enumerate(zip(season_chain, season_episode_lists), start=1):
                 eps = eps if isinstance(eps, list) else []
-                season_mapped_id = f"m{s['mal_id']}" if s.get("mal_id") else f"a{s['anilist_id']}"
+                season_mapped_id = f"a{s['anilist_id']}" if s.get("anilist_id") else f"m{s['mal_id']}"
                 for ep in eps:
                     ep.season_number = idx
                     ep.mapped_id = season_mapped_id

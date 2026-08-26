@@ -1,0 +1,19 @@
+AniDB diagnostic run — mapped_id=a154587  episodes=[1]
+Network trace -> /Users/Arkm/Projects/animax/ani_test_network.log
+Saved raw responses -> /Users/Arkm/Projects/animax/ani_test_output
+
+
+####################################################################################################
+# EPISODE 1  (mapped_id=a154587)
+####################################################################################################
+
+--- get_source_offers(is_dub=True)  [DUB] ---
+    No offer returned for DUB — AniDB either couldn't match a title on anidb.app, or this episode index is out of range. Check ani_test_network.log around the /browse?q=... and /episodes calls above for why.
+
+--- get_source_offers(is_dub=False)  [SUB] ---
+    No offer returned for SUB — AniDB either couldn't match a title on anidb.app, or this episode index is out of range. Check ani_test_network.log around the /browse?q=... and /episodes calls above for why.
+
+Done. Check:
+  - ani_test.log             (this run's narrative)
+  - ani_test_network.log     (every raw HTTP request/response)
+  - ani_test_output/         (full /languages JSON + embed HTML per language)

@@ -14,7 +14,6 @@
 
     <style>
         :root {
-            /* --- BRAND COLORS (Grayscale Upgrade with Dynamic Accents) --- */
             --brand-primary: #ffffff; 
             --brand-secondary: #a3a3a3;
             --brand-glow: rgba(255, 255, 255, 0.25);
@@ -42,7 +41,6 @@
             transition: filter 0.5s ease;
         }
 
-        /* WebVTT Subtitle Styling overrides */
         video::cue {
             background-color: rgba(0, 0, 0, 0.75);
             color: #ffffff;
@@ -51,7 +49,6 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.9);
         }
         
-        /* Modern Netflix-style Grayscale Pause Overlay */
         #pauseOverlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: linear-gradient(90deg, rgba(10, 10, 10, 0.96) 0%, rgba(10, 10, 10, 0.75) 45%, rgba(10, 10, 10, 0.35) 75%, rgba(10, 10, 10, 0.08) 100%);
@@ -100,7 +97,6 @@
             text-shadow: 0 1px 8px rgba(0,0,0,0.6); font-weight: 400;
         }
 
-        /* Elegant Top Bar Overlay */
         #top-bar {
             position: absolute; top: 24px; left: 50%;
             transform: translateX(-50%) translateY(-10px);
@@ -113,7 +109,6 @@
             opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0);
         }
         
-        /* Updated Left Section for Title & Season Info */
         .top-info {
             display: flex; align-items: flex-start; gap: 18px;
         }
@@ -138,7 +133,6 @@
             letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        /* Premium Floating Bottom Pill Bar */
         #controls {
             position: absolute; bottom: 24px; left: 50%;
             transform: translateX(-50%) translateY(10px);
@@ -181,7 +175,6 @@
             font-variant-numeric: tabular-nums; color: #e4e4e7; 
         }
         
-        /* Expandable Volume Control */
         .vol-wrapper {
             display: flex; align-items: center; gap: 0;
             transition: gap 0.3s ease;
@@ -216,7 +209,6 @@
             margin-top: -3px;
         }
 
-        /* Fluid Grayscale Progress Bar */
         .progress-container {
             flex: 1 1 auto; min-width: 0; display: flex; align-items: center; height: 18px; cursor: pointer;
             position: relative; margin: 0 4px;
@@ -249,47 +241,24 @@
         }
         .progress-container:hover input[type="range"].scrub-bar::-webkit-slider-thumb { opacity: 1; transform: scale(1.2); }
 
-        /* Unique LIVE Broadcaster Status Track */
         .live-status-track {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            flex-grow: 1;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            color: rgba(255, 255, 255, 0.8);
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            height: 36px;
-            border-radius: 18px;
-            padding: 0 16px;
-            margin: 0 20px;
+            display: flex; align-items: center; justify-content: center; gap: 10px; flex-grow: 1;
+            font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; font-weight: 600;
+            letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06); height: 36px; border-radius: 18px; padding: 0 16px; margin: 0 20px;
         }
         .live-dot {
-            width: 8px; height: 8px;
-            background-color: #ef4444;
-            border-radius: 50%;
-            box-shadow: 0 0 8px #ef4444;
-            animation: live-pulse-red 1.6s infinite;
+            width: 8px; height: 8px; background-color: #ef4444; border-radius: 50%;
+            box-shadow: 0 0 8px #ef4444; animation: live-pulse-red 1.6s infinite;
         }
         @keyframes live-pulse-red {
             0% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        .live-divider {
-            color: rgba(255, 255, 255, 0.15);
-        }
-        .live-meta {
-            color: var(--brand-secondary);
-            font-size: 0.72rem;
-            text-transform: uppercase;
-        }
+        .live-divider { color: rgba(255, 255, 255, 0.15); }
+        .live-meta { color: var(--brand-secondary); font-size: 0.72rem; text-transform: uppercase; }
 
-        /* Loader */
         #loader {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             border: 4px solid rgba(255,255,255,0.08); border-top: 4px solid var(--brand-primary);
@@ -298,7 +267,6 @@
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
         .hidden { display: none !important; }
         
-        /* Modern Paginated Settings Menu */
         .settings-btn {
             width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
             background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); cursor: pointer; transition: background 0.2s, border 0.2s;
@@ -306,43 +274,35 @@
         .settings-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--border-glass-hover); }
 
         .stream-menu-toggle {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 14px; border-radius: 999px;
-            border: 1px solid var(--border-glass);
-            background: rgba(12, 12, 12, 0.45);
-            color: white; cursor: pointer; backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 18px rgba(0,0,0,0.3);
-            font-size: 0.82rem; font-weight: 600; transition: border-color 0.2s, background 0.2s;
+            display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+            border: 1px solid var(--border-glass); background: rgba(12, 12, 12, 0.45); color: white;
+            cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.3); font-size: 0.82rem; font-weight: 600;
+            transition: border-color 0.2s, background 0.2s;
         }
         .stream-menu-toggle:hover { border-color: var(--border-glass-hover); background: rgba(24, 24, 24, 0.6); }
         .stream-menu-toggle svg { width: 16px; height: 16px; fill: currentColor; }
 
-        /* Watch Party */
         .party-toggle {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 14px; border-radius: 999px;
-            border: 1px solid var(--border-glass);
-            background: rgba(12, 12, 12, 0.45);
-            color: white; cursor: pointer; backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 18px rgba(0,0,0,0.3);
-            font-size: 0.82rem; font-weight: 600; transition: border-color 0.2s, background 0.2s;
+            display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+            border: 1px solid var(--border-glass); background: rgba(12, 12, 12, 0.45); color: white;
+            cursor: pointer; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.3); font-size: 0.82rem; font-weight: 600;
+            transition: border-color 0.2s, background 0.2s;
         }
         .party-toggle:hover { border-color: var(--border-glass-hover); background: rgba(24, 24, 24, 0.6); }
         .party-toggle svg { width: 16px; height: 16px; fill: currentColor; }
         .party-toggle.active { border-color: rgba(143, 231, 236, 0.5); background: rgba(143, 231, 236, 0.12); color: #8FE7EC; }
         .party-toggle .party-dot {
-            width: 7px; height: 7px; border-radius: 50%; background: #8FE7EC; display: none;
-            box-shadow: 0 0 6px #8FE7EC;
+            width: 7px; height: 7px; border-radius: 50%; background: #8FE7EC; display: none; box-shadow: 0 0 6px #8FE7EC;
         }
         .party-toggle.active .party-dot { display: inline-block; }
 
         .party-panel {
             position: absolute; top: 80px; right: 4%; z-index: 30;
-            width: min(320px, calc(100vw - 30px));
-            background: var(--bg-glass-heavy); border: 1px solid var(--border-glass);
-            border-radius: 18px; overflow: hidden; display: none;
-            box-shadow: 0 20px 48px rgba(0,0,0,0.65); backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            width: min(320px, calc(100vw - 30px)); background: var(--bg-glass-heavy); border: 1px solid var(--border-glass);
+            border-radius: 18px; overflow: hidden; display: none; box-shadow: 0 20px 48px rgba(0,0,0,0.65);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
         .party-panel.open { display: block; }
         .party-panel-header {
@@ -381,7 +341,6 @@
         }
         .party-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Advanced Provider Framework Menu */
         .stream-menu {
             position: absolute; top: 80px; right: 4%; z-index: 30;
             width: min(340px, calc(100vw - 30px)); max-height: min(450px, 70vh);
@@ -397,6 +356,15 @@
         }
         .stream-menu-title { font-size: 0.95rem; font-weight: 700; color: #fff; }
         .stream-menu-subtitle { font-size: 0.75rem; color: var(--brand-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .audio-toggle {
+            display: flex; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 999px; padding: 2px; gap: 2px; margin-left: auto; margin-right: 10px; flex-shrink: 0;
+        }
+        .audio-toggle-btn {
+            border: none; background: transparent; color: var(--brand-secondary); font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.5px; padding: 5px 12px; border-radius: 999px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .audio-toggle-btn.active { background: var(--brand-primary); color: #0a0a0a; }
         .stream-menu-close {
             border: none; background: rgba(255,255,255,0.08); color: white; width: 28px; height: 28px;
             border-radius: 999px; cursor: pointer; transition: background 0.2s;
@@ -409,7 +377,7 @@
             transition: all 0.2s ease;
         }
         .stream-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
-        .stream-item.active { border-color: rgba(255,255,255,0.24); background: rgba(255,255,255,0.12); box-shadow: inset 0 0 20px rgba(255,255,255,0.02); }
+        .stream-item.active { border-color: rgba(255,255,255,0.24); background: rgba(255,255,255,0.12); }
         .stream-item-main { display: flex; flex-direction: column; min-width: 0; }
         .stream-item-title { font-size: 0.92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .stream-item-meta { font-size: 0.74rem; color: var(--brand-secondary); margin-top: 4px; display: flex; gap: 6px; align-items: center;}
@@ -419,7 +387,6 @@
         }
         .stream-badge.active { background: white; color: black; }
 
-        /* Episodes Drawer & Season Switcher */
         .episodes-menu {
             position: absolute; top: 80px; right: 4%; z-index: 35;
             width: min(440px, calc(100vw - 30px)); max-height: min(520px, 75vh);
@@ -432,9 +399,7 @@
         .season-pill-container {
             display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto;
             border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);
-            scrollbar-width: none;
-            min-width: 0; flex-shrink: 0;
-            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; min-width: 0; flex-shrink: 0; -webkit-overflow-scrolling: touch;
         }
         .season-pill-container::-webkit-scrollbar { display: none; }
         .season-pill {
@@ -472,7 +437,6 @@
         }
         .settings-menu.open { display: block; }
         
-        /* Transitionable Panes */
         .settings-pane { display: none; flex-direction: column; padding: 12px; }
         .settings-pane.active { display: flex; }
 
@@ -508,14 +472,9 @@
         .settings-item.active { background: rgba(255,255,255,0.12); color: #ffffff; font-weight: 600; }
         
         .settings-item span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex-grow: 1;
-            margin-right: 8px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; margin-right: 8px;
         }
 
-        /* On-Screen Action Overlay Indicators */
         .center-indicator {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.85);
             background: rgba(15, 15, 15, 0.8); border: 1px solid rgba(255, 255, 255, 0.12);
@@ -531,7 +490,6 @@
             100% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
         }
 
-        /* Mobile Tap Indicators */
         .doubletap-indicator {
             position: absolute; top: 50%; width: 40%; transform: translateY(-50%);
             display: flex; align-items: center; justify-content: center;
@@ -558,73 +516,43 @@
             animation: indicator-pop 0.55s ease-out forwards;
         }
 
-        /* --- Custom Highly Immersive 404 Error Overlay --- */
         #errorOverlay {
-            position: absolute; inset: 0;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 100; box-sizing: border-box;
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; box-sizing: border-box;
         }
         .error-backdrop {
-            position: absolute; inset: 0;
-            background: rgba(10, 10, 10, 0.88);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
+            position: absolute; inset: 0; background: rgba(10, 10, 10, 0.88);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
         }
         .error-content {
-            position: relative; z-index: 101;
-            text-align: center; max-width: 440px; padding: 28px;
-            box-sizing: border-box;
+            position: relative; z-index: 101; text-align: center; max-width: 440px; padding: 28px; box-sizing: border-box;
         }
         .error-code {
-            font-size: clamp(4.5rem, 11vw, 7.8rem); margin: 0; font-weight: 800;
-            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(4.5rem, 11vw, 7.8rem); margin: 0; font-weight: 800; font-family: 'Space Grotesk', sans-serif;
             background: linear-gradient(135deg, #ffffff 30%, #a3a3a3 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 4px 12px rgba(255,255,255,0.08));
-            line-height: 1;
+            filter: drop-shadow(0 4px 12px rgba(255,255,255,0.08)); line-height: 1;
         }
         .error-msg {
-            font-size: 1.15rem; font-weight: 700; letter-spacing: 2px;
-            color: #ffffff; text-transform: uppercase; margin: 12px 0 6px 0;
+            font-size: 1.15rem; font-weight: 700; letter-spacing: 2px; color: #ffffff; text-transform: uppercase; margin: 12px 0 6px 0;
         }
         .error-sub {
             font-size: 0.88rem; color: #a3a3a3; line-height: 1.5; margin: 0 0 24px 0;
         }
         .error-btn {
-            background: #ffffff; color: #000000; border: none;
-            padding: 12px 24px; border-radius: 999px; font-weight: 700;
-            font-size: 0.85rem; cursor: pointer; transition: transform 0.2s, background 0.2s;
+            background: #ffffff; color: #000000; border: none; padding: 12px 24px; border-radius: 999px;
+            font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: transform 0.2s, background 0.2s;
             box-shadow: 0 8px 24px rgba(255,255,255,0.15);
         }
-        .error-btn:hover {
-            transform: scale(1.04); background: #e4e4e7;
-        }
-        .error-btn-row {
-            display: flex; align-items: center; justify-content: center;
-            gap: 12px; flex-wrap: wrap;
-        }
+        .error-btn:hover { transform: scale(1.04); background: #e4e4e7; }
+        .error-btn-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
         .error-btn-secondary {
-            background: transparent; color: #ffffff;
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: none;
-            display: inline-flex; align-items: center; gap: 6px;
+            background: transparent; color: #ffffff; border: 1px solid rgba(255,255,255,0.35); box-shadow: none; display: inline-flex; align-items: center; gap: 6px;
         }
-        .error-btn-secondary:hover {
-            background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5);
-        }
-        .error-btn-secondary svg {
-            width: 15px; height: 15px; fill: currentColor;
-            transition: transform 0.4s ease;
-        }
-        .error-btn-secondary.retrying svg {
-            animation: spin-retry 0.8s linear infinite;
-        }
-        @keyframes spin-retry {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        .error-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.5); }
+        .error-btn-secondary svg { width: 15px; height: 15px; fill: currentColor; transition: transform 0.4s ease; }
+        .error-btn-secondary.retrying svg { animation: spin-retry 0.8s linear infinite; }
+        @keyframes spin-retry { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        /* Mid-playback buffering indicator (reuses the loader spinner, smaller) */
         #bufferSpinner {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             border: 4px solid rgba(255,255,255,0.08); border-top: 4px solid var(--brand-primary);
@@ -633,7 +561,6 @@
         }
         #bufferSpinner.active { opacity: 1; }
 
-        /* Adaptive Tablet and Mobile Responsive Layouts */
         @media (max-width: 900px), (pointer: coarse) {
             #controls { height: 48px; padding: 0 12px; bottom: 16px; width: min(96vw, 920px); gap: 10px; }
             .controls-left, .controls-right { gap: 8px; }
@@ -751,11 +678,11 @@
                 <div class="stream-menu-title">Select Source</div>
                 <div class="stream-menu-subtitle">Available Providers & Servers</div>
             </div>
+            <div class="audio-toggle" id="audioToggle">
+                <button type="button" class="audio-toggle-btn" id="audioToggleSub">SUB</button>
+                <button type="button" class="audio-toggle-btn" id="audioToggleDub">DUB</button>
+            </div>
             <button class="stream-menu-close" id="streamMenuClose" type="button" aria-label="Close stream menu">×</button>
-        </div>
-        <div class="season-pill-container" id="audioPrefToggle">
-            <button type="button" class="season-pill" id="audioPrefSub" data-audio="sub">SUB (Original)</button>
-            <button type="button" class="season-pill" id="audioPrefDub" data-audio="dub">DUB</button>
         </div>
         <div class="stream-menu-list" id="streamMenuList"></div>
     </div>
@@ -804,14 +731,12 @@
             <span class="time-text" id="currentTime">0:00</span>
         </div>
 
-        <!-- Fluid Progress Bar (VOD Mode) -->
         <div class="progress-container" id="vodProgressContainer">
             <div class="progress-track"></div>
             <div class="progress-filled" id="progressFilled"></div>
             <input type="range" class="scrub-bar" id="progressBar" min="0" max="100" value="0" step="0.1">
         </div>
 
-        <!-- Symmetrical LIVE Broadcast Track (Replaces scrubber in Live Mode) -->
         <div class="live-status-track hidden" id="liveStatusTrack">
             <span class="live-dot"></span>
             <span id="liveStatusLabel">LIVE BROADCAST</span>
@@ -822,7 +747,6 @@
         <div class="controls-right">
             <span class="time-text" id="durationTime">0:00</span>
             
-            <!-- Expandable Volume Control -->
             <div class="vol-wrapper">
                 <button class="btn" id="muteBtn" aria-label="Mute/Unmute">
                     <svg id="volUp" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
@@ -833,7 +757,6 @@
                 </div>
             </div>
 
-            <!-- Custom Crisp High-Res CC Button -->
             <button class="btn" id="ccBtn" title="Subtitles">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M21 3C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM9 8C6.792 8 5 9.792 5 12C5 14.208 6.792 16 9 16C10.1 16 11.1 15.55 11.828 14.828L10.4144 13.4144C10.0525 13.7762 9.5525 14 9 14C7.895 14 7 13.105 7 12C7 10.895 7.895 10 9 10C9.55 10 10.0483 10.22 10.4153 10.5866L11.829 9.173C11.1049 8.44841 10.1045 8 9 8ZM16 8C13.792 8 12 9.792 12 12C12 14.208 13.792 16 16 16C17.104 16 18.104 15.552 18.828 14.828L17.4144 13.4144C17.0525 13.7762 16.5525 14 16 14C14.895 14 14 13.105 14 12C14 10.895 14.895 10 16 10C16.553 10 17.0534 10.2241 17.4153 10.5866L18.829 9.173C18.1049 8.44841 17.1045 8 16 8Z"></path>
@@ -856,7 +779,6 @@
 
     <!-- Paginated Settings Overlay Container -->
     <div class="settings-menu" id="settingsMenu">
-        <!-- Main Root Pane -->
         <div class="settings-pane active" id="paneMain">
             <div class="settings-item-row" data-target="paneQuality">
                 <span>Quality</span>
@@ -890,7 +812,6 @@
             </div>
         </div>
 
-        <!-- Quality Pane -->
         <div class="settings-pane" id="paneQuality">
             <div class="settings-back-header" data-back="paneMain">
                 <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -899,7 +820,6 @@
             <div id="qualityList" class="settings-list"></div>
         </div>
 
-        <!-- Subtitles Pane -->
         <div class="settings-pane" id="paneSubtitles">
             <div class="settings-back-header" data-back="paneMain">
                 <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -908,7 +828,6 @@
             <div id="subtitleList" class="settings-list"></div>
         </div>
 
-        <!-- Subtitle Size Pane -->
         <div class="settings-pane" id="paneSubSize">
             <div class="settings-back-header" data-back="paneMain">
                 <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -921,7 +840,6 @@
             </div>
         </div>
 
-        <!-- Speed Pane -->
         <div class="settings-pane" id="paneSpeed">
             <div class="settings-back-header" data-back="paneMain">
                 <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -936,7 +854,6 @@
             </div>
         </div>
 
-        <!-- Aspect Ratio Pane -->
         <div class="settings-pane" id="paneAspect">
             <div class="settings-back-header" data-back="paneMain">
                 <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -949,7 +866,6 @@
             </div>
         </div>
 
-        <!-- Theme Accent Pane -->
         <div class="settings-pane" id="paneAccent">
             <div class="settings-back-header" data-back="paneMain">
                 <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -979,19 +895,7 @@
     const META_YEAR = "{{ meta_year|default('') }}";
     const META_IMDB_ID = "{{ meta_imdb_id|default('') }}";
     const initialStreamsEl = document.getElementById('initial-stream-sources');
-    let INITIAL_STREAM_SOURCES = [];
-    if (initialStreamsEl) {
-        try {
-            INITIAL_STREAM_SOURCES = JSON.parse(initialStreamsEl.textContent || '[]');
-        } catch (e) {
-            // If this fires, the literal template tags expression above never actually got rendered 
-            // (e.g. this route served player.html as a raw/static file instead of via TemplateResponse),
-            // so the literal tags landed inside the script tag and broke JSON.parse right after the first "{". 
-            // Fail safe instead of taking down the whole player.
-            console.error('Failed to parse initial stream sources — verify this route renders player.html through the Jinja template engine:', e);
-            INITIAL_STREAM_SOURCES = [];
-        }
-    }
+    const INITIAL_STREAM_SOURCES = initialStreamsEl ? JSON.parse(initialStreamsEl.textContent || '[]') : [];
     
     const video = document.getElementById('video');
     const playBtn = document.getElementById('playPauseBtn');
@@ -1015,7 +919,6 @@
     const doubleTapIndicatorLeft = document.getElementById('doubleTapIndicatorLeft');
     const doubleTapIndicatorRight = document.getElementById('doubleTapIndicatorRight');
     
-    // Top Bar UI Elements
     const topLeftTitle = document.getElementById('topLeftTitle');
     const topLeftSubtitle = document.getElementById('topLeftSubtitle');
     const streamMenuToggle = document.getElementById('streamMenuToggle');
@@ -1023,7 +926,6 @@
     const streamMenuList = document.getElementById('streamMenuList');
     const streamMenuClose = document.getElementById('streamMenuClose');
 
-    // Watch Party Elements
     const partyToggle = document.getElementById('partyToggle');
     const partyToggleLabel = document.getElementById('partyToggleLabel');
     const partyPanel = document.getElementById('partyPanel');
@@ -1038,7 +940,6 @@
     const centerIndicator = document.getElementById('centerIndicator');
     const centerIndicatorInner = document.getElementById('centerIndicatorInner');
 
-    // Settings Menu Elements
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsMenu = document.getElementById('settingsMenu');
     const ccBtn = document.getElementById('ccBtn');
@@ -1056,20 +957,17 @@
     const valAspect = document.getElementById('valAspect');
     const valAccent = document.getElementById('valAccent');
 
-    // Pause Menu Elements
     const pauseLogo = document.getElementById('pauseLogo');
     const pauseTitle = document.getElementById('pauseTitle');
     const pauseSubtitle = document.getElementById('pauseSubtitle');
     const pauseSynopsis = document.getElementById('pauseSynopsis');
 
-    // Unique Custom 404 Layout Elements
     const errorOverlay = document.getElementById('errorOverlay');
     const errorSwitchBtn = document.getElementById('errorSwitchBtn');
     const errorRetryBtn = document.getElementById('errorRetryBtn');
     const errorRetryBtnLabel = document.getElementById('errorRetryBtnLabel');
     const bufferSpinner = document.getElementById('bufferSpinner');
 
-    // Setup Titles
     const urlParams = new URLSearchParams(window.location.search);
     const metaTitle = urlParams.get('title') || META_TITLE;
     const metaLogo = urlParams.get('logo');
@@ -1078,7 +976,6 @@
     const metaEpisode = urlParams.get('episode') || (EPISODE_ID !== 'None' ? EPISODE_ID : null);
     const metaYear = urlParams.get('year') || (META_YEAR !== 'None' ? META_YEAR : null);
 
-    // Apply Meta to Top Left UI
     if (metaTitle) {
         topLeftTitle.textContent = metaTitle;
         if (metaSeason && metaEpisode) {
@@ -1090,7 +987,6 @@
         }
     }
 
-    // Apply Meta to Pause UI
     if (metaLogo && metaLogo !== "null") {
         pauseLogo.src = metaLogo;
         pauseLogo.classList.remove('hidden');
@@ -1123,7 +1019,6 @@
 
     const STORAGE_PREFIX = 'animax_player';
     const subtitlePrefKey = `${STORAGE_PREFIX}:subtitle_pref`;
-    const audioPrefKey = `${STORAGE_PREFIX}:audio_pref`;
 
     function getResumeStorageKey() {
         if (IS_LIVE || !TMDB_ID || TMDB_ID === 'None') return null;
@@ -1162,41 +1057,6 @@
         localStorage.setItem(subtitlePrefKey, code);
     }
 
-    // Audio preference is 'sub' (original/Japanese track) or 'dub' (localized dub
-    // track). This is independent from the subtitle preference above — you can
-    // watch a dub with subtitles on, or the original audio with no subtitles.
-    function getPreferredAudio() {
-        return localStorage.getItem(audioPrefKey) || 'sub';
-    }
-
-    function savePreferredAudio(pref) {
-        if (pref !== 'sub' && pref !== 'dub') return;
-        localStorage.setItem(audioPrefKey, pref);
-        updateAudioToggleUI();
-    }
-
-    function updateAudioToggleUI() {
-        const pref = getPreferredAudio();
-        const subBtn = document.getElementById('audioPrefSub');
-        const dubBtn = document.getElementById('audioPrefDub');
-        if (subBtn) subBtn.classList.toggle('active', pref === 'sub');
-        if (dubBtn) dubBtn.classList.toggle('active', pref === 'dub');
-    }
-
-    // Picks the offer/source matching the saved audio preference. Falls back to
-    // whatever is available so a missing dub for one episode doesn't break
-    // playback — it just can't honor the preference for that episode.
-    function pickPreferredSource(sources) {
-        if (!sources || !sources.length) return null;
-        const pref = getPreferredAudio();
-        const wantsDub = pref === 'dub';
-        const match = sources.find((s) => typeof s.dub === 'boolean' && s.dub === wantsDub);
-        return match || sources[0];
-    }
-
-    updateAudioToggleUI();
-
-    // Adapt Controls Layout based on LIVE vs VOD content status
     if (IS_LIVE) {
         document.getElementById('rewindBtn').style.display = 'none';
         document.getElementById('forwardBtn').style.display = 'none';
@@ -1205,7 +1065,6 @@
         durationTimeEl.style.display = 'none';
     }
 
-    // --- Elegant Center Action Indicators ---
     const indicatorSvgs = {
         play: `<svg viewBox="0 0 24 24" width="34" height="34" fill="white"><path d="M8 5v14l11-7z"/></svg>`,
         pause: `<svg viewBox="0 0 24 24" width="34" height="34" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
@@ -1216,11 +1075,10 @@
     function showCenterIndicator(action) {
         centerIndicatorInner.innerHTML = indicatorSvgs[action];
         centerIndicator.classList.remove('animate');
-        void centerIndicator.offsetWidth; // Force Reflow
+        void centerIndicator.offsetWidth;
         centerIndicator.classList.add('animate');
     }
 
-    // --- Paginated Navigation Core ---
     function setActivePane(paneId) {
         document.querySelectorAll('.settings-pane').forEach(pane => {
             pane.classList.remove('active');
@@ -1278,7 +1136,6 @@
         }
     });
 
-    // --- Auto-Hide Controls System ---
     function showControls() {
         videoContainer.classList.add('active');
         document.body.style.cursor = "default";
@@ -1287,7 +1144,7 @@
 
     function hideControls() {
         if (isHoveringControls || isSettingsOpen) return;
-        if (!errorOverlay.classList.contains('hidden')) return; // keep Sources button visible during a stream error
+        if (!errorOverlay.classList.contains('hidden')) return;
         if (!video.paused) {
             videoContainer.classList.remove('active');
             document.body.style.cursor = "none";
@@ -1307,9 +1164,52 @@
     controlsBar.addEventListener('mouseenter', () => { isHoveringControls = true; clearTimeout(controlsTimeout); });
     controlsBar.addEventListener('mouseleave', () => { isHoveringControls = false; resetControlsTimer(); });
 
-    // --- Stream Initialization ---
     let hlsInstance = null;
     let streamSources = [];
+    const DUB_PREF_KEY = 'animax_preferred_dub';
+    function getPreferredDub() {
+        try {
+            const v = localStorage.getItem(DUB_PREF_KEY);
+            return v === null ? null : v === 'true';
+        } catch (e) { return null; }
+    }
+    function setPreferredDub(isDub) {
+        try { localStorage.setItem(DUB_PREF_KEY, isDub ? 'true' : 'false'); } catch (e) {}
+    }
+    function pickOfferIndexByPreference(offers) {
+        const pref = getPreferredDub();
+        if (pref === null || !Array.isArray(offers)) return 0;
+        const idx = offers.findIndex(o => !!o.dub === pref);
+        return idx >= 0 ? idx : 0;
+    }
+    const audioToggleSub = document.getElementById('audioToggleSub');
+    const audioToggleDub = document.getElementById('audioToggleDub');
+    function updateAudioToggleUI() {
+        if (!audioToggleSub || !audioToggleDub) return;
+        const active = streamSources.find(s => s.id === activeStreamSourceId);
+        const isDub = active ? !!active.dub : (getPreferredDub() === true);
+        audioToggleSub.classList.toggle('active', !isDub);
+        audioToggleDub.classList.toggle('active', isDub);
+    }
+    function pickAndSwitchByDub(wantDub) {
+        setPreferredDub(wantDub);
+        const active = streamSources.find(s => s.id === activeStreamSourceId);
+        const currentProvider = active ? active.provider : null;
+        
+        let match = streamSources.find(s => !!s.dub === wantDub && s.provider === currentProvider);
+        if (!match) {
+            match = streamSources.find(s => !!s.dub === wantDub);
+        }
+        
+        if (match) {
+            selectStreamSource(match);
+        } else {
+            updateAudioToggleUI();
+            partyShowToast(`No ${wantDub ? 'dub' : 'sub'} source available for this episode`);
+        }
+    }
+    audioToggleSub?.addEventListener('click', () => pickAndSwitchByDub(false));
+    audioToggleDub?.addEventListener('click', () => pickAndSwitchByDub(true));
     let activeStreamSourceId = null;
     let currentPlaybackUrl = null;
 
@@ -1321,14 +1221,13 @@
         const seen = new Set();
         return (items || []).filter((item) => {
             if (!item || !item.url) return false;
-            const marker = normalizeStreamTarget(item.url);
-            if (!marker || seen.has(marker)) return false;
+            const marker = item.id || item.url;
+            if (seen.has(marker)) return false;
             seen.add(marker);
             return true;
         });
     }
 
-    // Modern Framework Menu UI Builder
     function renderStreamMenu() {
         if (!streamMenuList) return;
         if (!streamSources.length) {
@@ -1338,14 +1237,13 @@
 
         streamMenuList.innerHTML = '';
         streamSources.forEach((source) => {
-            const isActive = activeStreamSourceId === source.id;
+            const isActive = activeStreamSourceId === source.id || (activeStreamSourceId && source.id && activeStreamSourceId.includes(source.id));
             const item = document.createElement('button');
             item.type = 'button';
             item.className = `stream-item${isActive ? ' active' : ''}`;
             
-            // Pluggable framework formatting
-            const providerName = source.provider || 'Source';
-            const serverName = source.server || source.title || 'Server 1';
+            const providerName = (source.provider || 'Provider').toUpperCase();
+            const serverName = source.server || source.title || `${providerName} (${source.dub ? 'DUB' : 'SUB'})`;
             const qualityName = source.quality || 'Auto';
 
             item.innerHTML = `
@@ -1362,39 +1260,53 @@
             item.addEventListener('click', () => selectStreamSource(source));
             streamMenuList.appendChild(item);
         });
+        updateAudioToggleUI();
     }
 
     async function selectStreamSource(source) {
         if (!source?.url) return;
+        if (typeof source.dub === 'boolean') setPreferredDub(source.dub);
+        
+        // Handoff to external provider player routes
+        if (source.url.startsWith('/player/stream') || (source.url.startsWith('http') && source.url.includes('/player/stream'))) {
+            const targetUrl = new URL(source.url, window.location.origin);
+            if (streamSources && streamSources.length > 0 && !targetUrl.searchParams.get('stream_sources')) {
+                targetUrl.searchParams.set('stream_sources', JSON.stringify(streamSources));
+            }
+            if (targetUrl.pathname + targetUrl.search !== window.location.pathname + window.location.search) {
+                window.location.href = targetUrl.toString();
+                return;
+            }
+        }
+        
+        // Internal payload route extractor
+        if (source.url.startsWith('/api/player/payload')) {
+            try {
+                loader.classList.remove('hidden');
+                const res = await fetch(source.url);
+                if (!res.ok) throw new Error("Payload extraction failed");
+                const data = await res.json();
+                activeStreamSourceId = source.id;
+                renderStreamMenu();
+                await switchSource(data.stream_url);
+                streamMenu.classList.remove('open');
+                return;
+            } catch (err) {
+                console.error("Failed to load payload source:", err);
+                showErrorOverlay();
+                return;
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
         const normalizedUrl = normalizeStreamTarget(source.url);
         if (!normalizedUrl) return;
         activeStreamSourceId = source.id || normalizedUrl;
         currentPlaybackUrl = normalizedUrl;
-        // Manually picking a source is an explicit signal of audio intent —
-        // remember it so the next episode opens with the same sub/dub choice
-        // instead of silently reverting to whatever offer came back first.
-        if (typeof source.dub === 'boolean') {
-            savePreferredAudio(source.dub ? 'dub' : 'sub');
-        }
         renderStreamMenu();
         await switchSource(normalizedUrl);
         streamMenu.classList.remove('open');
-    }
-
-    // Quick SUB/DUB toggle at the top of the Stream Sources menu. Switches to a
-    // matching source for the CURRENT episode immediately if one is available.
-    document.getElementById('audioPrefSub')?.addEventListener('click', () => handleAudioToggle('sub'));
-    document.getElementById('audioPrefDub')?.addEventListener('click', () => handleAudioToggle('dub'));
-
-    function handleAudioToggle(pref) {
-        savePreferredAudio(pref);
-        const wantsDub = pref === 'dub';
-        const match = streamSources.find((s) => typeof s.dub === 'boolean' && s.dub === wantsDub);
-        if (match) {
-            selectStreamSource(match);
-        } else {
-            console.warn(`No ${pref.toUpperCase()} source available for this episode from any provider yet — preference saved for future episodes.`);
-        }
     }
 
     async function resolveManifestUrl(url) {
@@ -1443,14 +1355,12 @@
         return `/hls/${value}/index.m3u8`;
     }
 
-    // Retrieve and parse standard active stream token
     function getStreamToken(url) {
         const target = url || streamUrl || '';
         const match = target.match(/\/hls\/([^\/]+)\/index\.m3u8/);
         return match ? match[1] : null;
     }
 
-    // Resolves and displays localized metadata for Live Broadcasts
     async function resolveLiveMetadata() {
         const token = getStreamToken();
         if (!token) return;
@@ -1476,7 +1386,7 @@
                 if (metadata.logo) {
                     pauseLogo.src = metadata.logo;
                     pauseLogo.classList.remove('hidden');
-                    pauseTitle.classList.add('hidden'); // Prioritize graphic asset
+                    pauseTitle.classList.add('hidden');
                 }
                 if (metadata.subtitle) {
                     pauseSubtitle.textContent = metadata.subtitle;
@@ -1495,6 +1405,33 @@
     async function initStream() {
         try {
             video.crossOrigin = 'anonymous';
+            let derivedMediaId = urlParams.get('media_id') || urlParams.get('id') || (TMDB_ID && TMDB_ID !== "None" ? `tt${TMDB_ID}` : null);
+            let epNum = parseInt(urlParams.get('episodeId') || urlParams.get('episode') || EPISODE_ID || '1') || 1;
+
+            // Pre-populate available stream sources dynamically from backend resolver
+            if (derivedMediaId && (!INITIAL_STREAM_SOURCES || INITIAL_STREAM_SOURCES.length === 0)) {
+                try {
+                    const srcRes = await fetch(`/api/sources/${encodeURIComponent(derivedMediaId)}?episode=${epNum}`);
+                    if (srcRes.ok) {
+                        const offers = await srcRes.json();
+                        if (offers && offers.length > 0) {
+                            streamSources = offers.map((offer, idx) => ({
+                                id: `offer-${idx}-${offer.provider}`,
+                                provider: (offer.provider || 'Provider').toUpperCase(),
+                                server: `${(offer.provider || 'Server').toUpperCase()} (${offer.dub ? 'DUB' : 'SUB'})`,
+                                quality: offer.quality || 'Auto',
+                                title: `${offer.provider} ${offer.dub ? 'Dub' : 'Sub'}`,
+                                type: offer.type,
+                                dub: !!offer.dub,
+                                url: offer.external_player_url || offer.url
+                            }));
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Could not pre-fetch provider offers:", e);
+                }
+            }
+
             if (TMDB_ID && TMDB_ID !== "None") {
                 let mediaType = 'movie'; let qs = '';
                 if (SEASON_ID && SEASON_ID !== 'None' && EPISODE_ID && EPISODE_ID !== 'None') {
@@ -1509,23 +1446,24 @@
                 const sources = data.sources || [];
                 const subtitles = data.subtitles || [];
 
-                const preferredSubtitle = getPreferredSubtitle();
                 sources.sort((a,b) => (parseInt(String(b.quality).match(/(\d+)/)?.[1]||0)) - parseInt(String(a.quality).match(/(\d+)/)?.[1]||0));
 
                 const tmdbSources = sources.map((s, idx) => ({
                     id: `tmdb-${idx}-${String(s.quality || 'source').toLowerCase()}`,
-                    provider: 'Videasy',
-                    server: `CDN ${idx + 1}`,
+                    provider: 'VIDEASY',
+                    server: `VIDEASY (${s.is_dub ? 'DUB' : 'SUB'})`,
                     quality: s.quality || 'Auto',
-                    title: `Videasy CDN ${idx + 1}`,
+                    title: `Videasy ${s.is_dub ? 'Dub' : 'Sub'}`,
                     type: 'source',
+                    dub: !!s.is_dub,
                     url: s.url,
                 }));
-                streamSources = dedupeStreamSources([...(Array.isArray(INITIAL_STREAM_SOURCES) ? INITIAL_STREAM_SOURCES : []), ...tmdbSources]);
-                activeStreamSourceId = streamSources[0]?.id || null;
+
+                const merged = [...(Array.isArray(INITIAL_STREAM_SOURCES) ? INITIAL_STREAM_SOURCES : []), ...streamSources, ...tmdbSources];
+                streamSources = dedupeStreamSources(merged);
+                activeStreamSourceId = streamSources.find(s => s.provider === 'VIDEASY')?.id || streamSources[0]?.id || null;
                 currentPlaybackUrl = normalizeStreamTarget(streamUrl);
                 renderStreamMenu();
-                updateAudioToggleUI();
 
                 qualityList.innerHTML = '';
                 sources.forEach((s, idx) => {
@@ -1606,35 +1544,6 @@
                     }
                 });
 
-                const preferredIndex = subtitleEntries.findIndex(entry => entry.normalizedLang === preferredSubtitle);
-                if (preferredSubtitle === 'off' || preferredSubtitle === '') {
-                    [...video.textTracks].forEach(t => t.mode = 'disabled');
-                    [...subtitleList.children].forEach(c => c.classList.remove('active'));
-                    offItem.classList.add('active');
-                    valSubtitles.textContent = 'Off';
-                } else {
-                    const selectedIndex = preferredIndex !== -1 ? preferredIndex : -1;
-                    if (selectedIndex !== -1) {
-                        const entry = subtitleEntries[selectedIndex];
-                        const selectPreferred = () => {
-                            const textTrack = entry.trackEl.track;
-                            if (textTrack) {
-                                [...video.textTracks].forEach(t => t.mode = (t === textTrack) ? 'showing' : 'disabled');
-                            }
-                            [...subtitleList.children].forEach(c => c.classList.remove('active'));
-                            entry.item.classList.add('active');
-                            valSubtitles.textContent = entry.label;
-                        };
-                        if (entry.trackEl.track) { selectPreferred(); } 
-                        else { entry.trackEl.addEventListener('load', selectPreferred); setTimeout(selectPreferred, 500); }
-                    } else {
-                        [...video.textTracks].forEach(t => t.mode = 'disabled');
-                        [...subtitleList.children].forEach(c => c.classList.remove('active'));
-                        offItem.classList.add('active');
-                        valSubtitles.textContent = 'Off';
-                    }
-                }
-
             } else if ((PAYLOAD_URL && PAYLOAD_URL !== "None" && PAYLOAD_URL !== "") || (urlParams.get('payload_url')) || (urlParams.get('provider') && urlParams.get('ep_id')) || (PROVIDER && PROVIDER !== "None" && EP_ID && EP_ID !== "None")) {
                 const prov = urlParams.get('provider') || PROVIDER;
                 const ep = urlParams.get('ep_id') || EP_ID;
@@ -1697,6 +1606,13 @@
                         subtitleList.appendChild(item);
                     });
                 }
+
+                if (Array.isArray(INITIAL_STREAM_SOURCES) && INITIAL_STREAM_SOURCES.length > 0) {
+                    streamSources = dedupeStreamSources([...INITIAL_STREAM_SOURCES, ...streamSources]);
+                }
+                activeStreamSourceId = streamSources.find(s => s.provider === prov?.toUpperCase())?.id || streamSources[0]?.id || null;
+                renderStreamMenu();
+                
             } else if (STREAM_ID && STREAM_ID !== "None" && STREAM_ID !== "") {
                 streamUrl = normalizeStreamTarget(STREAM_ID);
             } else if (urlParams.get('stream_url')) {
@@ -1704,22 +1620,6 @@
             }
 
             if (!streamUrl) { alert("Stream source not found"); loader.classList.add('hidden'); return; }
-
-            const baseMenuSources = (Array.isArray(INITIAL_STREAM_SOURCES) ? INITIAL_STREAM_SOURCES : []).map((source, index) => ({
-                id: source.id || `source-${index}`,
-                provider: source.provider || 'Live Stream',
-                server: source.title || source.label || source.name || 'Server',
-                quality: source.quality || 'Auto',
-                title: source.title || 'Stream',
-                type: source.type || source.kind || (IS_LIVE ? 'live' : 'source'),
-                url: normalizeStreamTarget(source.url || source.stream_url || source.href),
-            })).filter((source) => source.url);
-            
-            streamSources = dedupeStreamSources([...baseMenuSources, { id: 'primary', provider: 'Direct', server: 'Default Source', quality: 'Auto', title: IS_LIVE ? 'Live stream' : 'Primary source', type: IS_LIVE ? 'live' : 'source', url: streamUrl }]);
-            activeStreamSourceId = streamSources.find((source) => source.url === streamUrl)?.id || streamSources[0]?.id || null;
-            currentPlaybackUrl = normalizeStreamTarget(streamUrl);
-            renderStreamMenu();
-            updateAudioToggleUI();
 
             const resumeTime = getSavedResumeTime();
             const resolvedStreamUrl = await resolveManifestUrl(streamUrl);
@@ -1730,14 +1630,12 @@
                 await resolveLiveMetadata();
             }
 
-            let derivedMediaId = urlParams.get('media_id') || urlParams.get('id') || (TMDB_ID && TMDB_ID !== "None" ? `tt${TMDB_ID}` : null);
             if (derivedMediaId) {
                 initPlayerEpisodes(derivedMediaId);
             }
         } catch (e) { console.error(e); }
     }
 
-    // --- Episodes & Seasons Drawer System ---
     const episodesBtn = document.getElementById('episodesBtn');
     const nextEpBtn = document.getElementById('nextEpBtn');
     const episodesMenu = document.getElementById('episodesMenu');
@@ -1856,9 +1754,8 @@
             card.type = 'button';
             card.className = `episode-card-item${isActive ? ' active' : ''}`;
 
-            const thumb = ep.thumbnail_url || (META_LOGO && META_LOGO !== "None" ? META_LOGO : '');
+            const thumb = ep.thumbnail_url || (metaLogo && metaLogo !== "null" ? metaLogo : '');
             const fillerTag = ep.is_filler ? '<span class="filler-tag">FILLER</span>' : '';
-
             const absNum = ep.absolute_number || ep.episode_number;
 
             card.innerHTML = `
@@ -1896,34 +1793,31 @@
             const offers = await res.json();
             if (!offers || offers.length === 0) throw new Error("No offers available");
 
+            const selectedIdx = pickOfferIndexByPreference(offers);
+            const selectedOffer = offers[selectedIdx];
+            const targetUrl = selectedOffer.external_player_url || selectedOffer.url;
+
             const formattedSources = offers.map((offer, idx) => ({
                 id: `offer-${idx}-${offer.provider}`,
                 provider: (offer.provider || 'Provider').toUpperCase(),
                 server: `${(offer.provider || 'Server').toUpperCase()} (${offer.dub ? 'DUB' : 'SUB'})`,
                 quality: offer.quality || 'Auto',
                 title: `${offer.provider} ${offer.dub ? 'Dub' : 'Sub'}`,
-                dub: !!offer.dub,
                 type: offer.type,
+                dub: !!offer.dub,
                 url: offer.external_player_url || offer.url
             }));
 
-            // Respect whatever sub/dub the user has previously chosen instead of
-            // always resetting to offers[0] (which is what made episode 2+ silently
-            // fall back to the original-language track even after picking DUB).
-            const selectedOffer = pickPreferredSource(formattedSources) || formattedSources[0];
-            const targetUrl = selectedOffer.url;
-
             streamSources = formattedSources;
-            activeStreamSourceId = selectedOffer?.id || formattedSources[0]?.id || null;
+            activeStreamSourceId = formattedSources[selectedIdx]?.id || null;
             renderStreamMenu();
-            updateAudioToggleUI();
 
             if (topLeftSubtitle) {
                 topLeftSubtitle.textContent = `EP ${ep.episode_number}: ${ep.title || 'Episode ' + ep.episode_number}`;
                 topLeftSubtitle.style.display = 'block';
             }
 
-            await switchSource(targetUrl);
+            await selectStreamSource(selectedOffer);
             renderEpisodeList(currentSeasonNum);
 
             window.parent.postMessage({
@@ -1965,7 +1859,6 @@
         }
     });
 
-    // Attempt to automatically loop to the next server source on failure
     function attemptAutoSwitchSource() {
         if (!streamSources || streamSources.length <= 1) {
             showErrorOverlay();
@@ -1979,7 +1872,6 @@
         }
         const nextSource = streamSources[nextIndex];
         
-        // Notify parent to log backup shift toast
         window.parent.postMessage({
             type: 'SHOW_TOAST',
             message: `Re-routing connection: ${nextSource.server || 'Backup Server'}`,
@@ -1995,7 +1887,6 @@
         errorOverlay.classList.remove('hidden');
         video.style.filter = "brightness(0.25) blur(8px)";
         clearInterval(progressInterval);
-        // Keep the top bar (Sources button) visible & interactive while the error is shown
         videoContainer.classList.add('active');
         clearTimeout(controlsTimeout);
         document.body.style.cursor = "default";
@@ -2007,8 +1898,6 @@
         resetControlsTimer();
     }
 
-    // Reload the currently active source in place, preserving playback position
-    // (used by the Refresh button on the 404 overlay).
     async function retryCurrentSource() {
         if (errorRetryBtn.classList.contains('retrying')) return;
         errorRetryBtn.classList.add('retrying');
@@ -2045,10 +1934,6 @@
                 maxBufferLength: 10,
                 startPosition: startTime,
                 enableWorker: true,
-                // --- CDN 403 BYPASS INTERCEPTOR ---
-                // If a sub-playlist directly references a cross-origin absolute URL (like sandstorm13.site), 
-                // it bypasses our proxy and fails CORS/Cloudflare bot checks. 
-                // This forces those absolute URLs back through our Python proxy spoofing headers.
                 xhrSetup: function(xhr, segUrl) {
                     if (segUrl.startsWith('http') && !segUrl.includes(window.location.host)) {
                         const proxiedUrl = proxyUrl(segUrl);
@@ -2078,18 +1963,7 @@
             hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
                 if (data.fatal) {
                     console.error('HLS load error', data);
-                    if (data.details === 'bufferAddCodecError' || data.details === 'codecError') {
-                        console.log('Codec error detected, attempting fallback to native playback');
-                        if (video.canPlayType('application/vnd.apple.mpegurl') && manifestUrl) {
-                            video.src = manifestUrl;
-                            video.load();
-                            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-                        } else {
-                            attemptAutoSwitchSource();
-                        }
-                    } else {
-                        attemptAutoSwitchSource();
-                    }
+                    attemptAutoSwitchSource();
                 }
             });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -2125,7 +1999,6 @@
         return h > 0 ? `${h}:${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}` : `${m}:${s < 10 ? '0':''}${s}`;
     }
 
-    // --- Netflix Pause Menu Logic ---
     function triggerPauseOverlay() {
         clearTimeout(idlePauseTimeout);
         idlePauseTimeout = setTimeout(() => {
@@ -2150,7 +2023,6 @@
         } 
     });
 
-    // --- Core Video Events ---
     function togglePlay() { 
         if (video.paused) {
             video.play().then(() => {
@@ -2184,15 +2056,10 @@
         clearInterval(stallCheckInterval);
     });
 
-    // --- Watch Party ---
     let partySocket = null;
     let partyRoomId = urlParams.get('party') || null;
     let partySuppressBroadcast = false;
     let partySuppressTimeout = null;
-    // True only when THIS client just created the room via the "Watch Party" button
-    // (as opposed to joining one from a shared ?party= link). Used to stop the
-    // server's brand-new-room state (position 0, paused) from snapping the host's
-    // own in-progress playback back to the start.
     let partyIsHost = !urlParams.get('party');
 
     function partyShowToast(text) {
@@ -2201,13 +2068,6 @@
         clearTimeout(partyToast._t);
         partyToast._t = setTimeout(() => partyToast.classList.remove('show'), 2200);
     }
-
-    function partyBuildJoinLink(code) {
-        return `${window.location.origin}/join?code=${code}`;
-    }
-
-
-
 
     function partySend(type, position) {
         if (partySocket && partySocket.readyState === WebSocket.OPEN) {
@@ -2256,9 +2116,6 @@
             if (msg.type === 'welcome') {
                 partyUpdateMembers(msg.members || 1);
                 if (partyIsHost) {
-                    // We created this room — don't get snapped back to the server's
-                    // fresh-room default (position 0). Instead, broadcast our current
-                    // position/state so anyone who joins syncs to where we actually are.
                     partySend(video.paused ? 'pause' : 'play', video.currentTime || 0);
                 } else if (typeof msg.position === 'number') {
                     partyApplyRemoteState(!!msg.playing, msg.position);
@@ -2274,16 +2131,12 @@
             partyToggle.classList.remove('active');
         });
 
-        partySocket.addEventListener('error', () => {});
-
-        // Periodic drift-correction ping while playing
         setInterval(() => {
             if (partySocket && partySocket.readyState === WebSocket.OPEN && !video.paused) {
                 partySend('sync', video.currentTime || 0);
             }
         }, 6000);
     }
-
 
     function partyOpenPanelForRoom(roomId) {
         partyLinkInput.value = roomId.toUpperCase();
@@ -2292,38 +2145,37 @@
     }
 
     function partyStart() {
-            if (episodesMenu) episodesMenu.classList.remove('open');
-            if (partyRoomId) {
-                partyOpenPanelForRoom(partyRoomId);
-                return;
-            }
-            
-            fetch('/api/party/new', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: metaTitle || topLeftTitle.textContent,
-                    season: metaSeason,
-                    episode: metaEpisode,
-                    year: metaYear,
-                    logo: metaLogo,
-                    synopsis: metaSynopsis,
-                    is_live: IS_LIVE,
-                    player_path: window.location.pathname + window.location.search
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                partyRoomId = data.room || data.code;
-                const params = new URLSearchParams(window.location.search);
-                params.set('party', partyRoomId);
-                history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-                partyConnect(partyRoomId);
-                partyOpenPanelForRoom(partyRoomId);
-            })
-            .catch(() => partyShowToast('Could not start watch party'));
+        if (episodesMenu) episodesMenu.classList.remove('open');
+        if (partyRoomId) {
+            partyOpenPanelForRoom(partyRoomId);
+            return;
         }
-
+        
+        fetch('/api/party/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: metaTitle || topLeftTitle.textContent,
+                season: metaSeason,
+                episode: metaEpisode,
+                year: metaYear,
+                logo: metaLogo,
+                synopsis: metaSynopsis,
+                is_live: IS_LIVE,
+                player_path: window.location.pathname + window.location.search
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            partyRoomId = data.room || data.code;
+            const params = new URLSearchParams(window.location.search);
+            params.set('party', partyRoomId);
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            partyConnect(partyRoomId);
+            partyOpenPanelForRoom(partyRoomId);
+        })
+        .catch(() => partyShowToast('Could not start watch party'));
+    }
 
     partyToggle.addEventListener('click', partyStart);
 
@@ -2345,9 +2197,6 @@
         }
     });
 
-    // Broadcast local play/pause/seek to the party (native video events fire
-    // whether triggered by the user or by our own remote-sync code, so a
-    // suppress flag prevents echoing state we just applied).
     video.addEventListener('play', () => {
         if (!partySuppressBroadcast) partySend('play', video.currentTime || 0);
     });
@@ -2374,7 +2223,6 @@
         showCenterIndicator('forward');
     });
 
-    // --- Mobile Tap and Double-Tap Support ---
     let lastTapTimestamp = 0;
     let tapTimeout = null;
     let touchStartX = 0;
@@ -2466,7 +2314,6 @@
         }
     });
 
-    // --- Settings Selectors (Speed, Size, Aspect Ratio, Theme Accents) ---
     speedList.querySelectorAll('.settings-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2542,7 +2389,6 @@
         });
     });
 
-    // --- Fluid Scrubbing ---
     progressBar.addEventListener('input', (e) => {
         if(IS_LIVE) return;
         isScrubbing = true;
@@ -2572,7 +2418,6 @@
             progressBar.value = percent;
             progressFilled.style.width = `${percent}%`;
             
-            // Premium Touch: Show Remaining Countdown Timecode (e.g. -0:35) like the reference image
             const remaining = video.duration - now;
             if (isFinite(remaining) && remaining >= 0) {
                 durationTimeEl.textContent = `-${formatTime(remaining)}`;
@@ -2604,10 +2449,6 @@
         }
     });
 
-    // --- Mid-playback Buffering Indicator ---
-    // Fires whenever the browser has to pause for more data (network hiccups,
-    // quality switches, seeks). Distinct from the initial #loader, which only
-    // covers the very first load / explicit source switches.
     function showBufferSpinner() {
         if (!errorOverlay.classList.contains('hidden')) return;
         bufferSpinner.classList.add('active');
@@ -2621,7 +2462,6 @@
     video.addEventListener('canplay', hideBufferSpinner);
     video.addEventListener('pause', hideBufferSpinner);
 
-    // --- Volume & Keyboard Controls ---
     function updateVolumeUI() {
         if(video.muted || video.volume === 0) {
             volUp.classList.add('hidden'); volMute.classList.remove('hidden');
@@ -2669,16 +2509,14 @@
         }
     });
 
-    // --- Premium Progress Logging & Dynamic Credits Boundary Watcher ---
     let progressInterval = null;
 
     function getCreditsThreshold(duration) {
         if (!duration || isNaN(duration)) return 0;
-        // Dynamically scale boundaries depending on runtime (episodes vs movies)
         if (duration < 1800) { 
-            return Math.min(duration * 0.08, 120); // 8% capped at 2 minutes
+            return Math.min(duration * 0.08, 120);
         } else { 
-            return Math.min(duration * 0.10, 360); // 10% capped at 6 minutes
+            return Math.min(duration * 0.10, 360);
         }
     }
 
@@ -2693,7 +2531,6 @@
             const isFinished = currentTime >= (duration - threshold);
             const statusLabel = isFinished ? "Finished" : "Watching";
 
-            // Safe, cross-domain dispatching every 1 second [1]
             window.parent.postMessage({
                 type: 'PLAYBACK_PROGRESS',
                 id: TMDB_ID !== 'None' ? TMDB_ID : STREAM_ID,
@@ -2706,7 +2543,6 @@
         }, 1000);
     }
 
-    // --- Stall Connection Watchdog ---
     let stallCheckInterval = null;
     let lastKnownTime = -1;
     let stallSeconds = 0;
@@ -2718,7 +2554,7 @@
             const curr = video.currentTime;
             if (curr === lastKnownTime) {
                 stallSeconds++;
-                if (stallSeconds >= 12) { // 12 seconds connection failure threshold
+                if (stallSeconds >= 12) {
                     attemptAutoSwitchSource();
                 }
             } else {
@@ -2728,15 +2564,12 @@
         }, 1000);
     }
 
-    // Interactive button event inside the 404 overlay to post provider switch event back to host
     errorSwitchBtn.addEventListener('click', () => {
         window.parent.postMessage({ type: 'SWITCH_PROVIDER' }, '*');
     });
 
-    // Retry (refresh) button inside the 404 overlay — reloads the same source in place
     errorRetryBtn.addEventListener('click', retryCurrentSource);
 
-    // Capture auto-switch cycle instructions dispatched from parent shell
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'TRY_NEXT_PROVIDER') {
             attemptAutoSwitchSource();
