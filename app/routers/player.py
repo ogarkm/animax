@@ -27,7 +27,15 @@ logger = logging.getLogger("animax-player-router")
 
 router = APIRouter(tags=["Player & Streaming Engine"])
 
-# Resolve template directories (check root templates, player/templates, app/templates)
+# --- Universal CORS Headers for Production Deployments ---
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges, Content-Type",
+}
+
+# Resolve template directories
 project_root = Path(__file__).resolve().parent.parent.parent
 template_dirs = [
     str(project_root / "player" / "templates"),
@@ -41,6 +49,14 @@ LOGO_PATH = project_root / "player" / "logo.txt"
 if not LOGO_PATH.exists():
     LOGO_PATH = project_root / "logo.txt"
 LOGO_TEXT = LOGO_PATH.read_text(encoding="utf-8", errors="replace") if LOGO_PATH.exists() else ""
+
+
+# --- CORS Preflight Handler ---
+@router.options("/hls/{path:path}")
+@router.options("/proxy")
+@router.options("/fetch/{path:path}")
+async def cors_preflight():
+    return Response(status_code=204, headers=CORS_HEADERS)
 
 
 # --- Tunnel Endpoints ---
@@ -147,14 +163,12 @@ async def status() -> dict:
 
 @router.get("/join", response_class=HTMLResponse)
 async def get_join_page(request: Request):
-    """Serves the 5-letter Watch Party entry & autopopulation UI."""
     return templates.TemplateResponse(request, "join.html", {"request": request})
 
 
 @router.post("/api/party/new")
 @router.get("/api/party/new")
 async def api_party_new(request: Request):
-    """Mints a unique 5-character alphanumeric party code and stores stream metadata."""
     title = ""
     media_type = "Movie"
     season = None
@@ -200,7 +214,6 @@ async def api_party_new(request: Request):
 
 @router.get("/api/party/info/{code}")
 async def api_party_info(code: str):
-    """Returns real-time room metadata, members count, and target player path for join.html."""
     code_clean = code.strip().upper()
     room = pp.party_rooms.get(code_clean)
     if not room:
@@ -209,7 +222,6 @@ async def api_party_info(code: str):
     conns = pp.party_connections.get(code_clean, {})
     member_count = max(1, len(conns))
 
-    # Reconstruct player redirect url cleanly
     if room.query_params:
         base = room.query_params
         if "party=" not in base:
@@ -344,7 +356,7 @@ async def register(
     if pp.host_header_overrides.get(host):
         response["applied_headers"] = pp.host_header_overrides[host]
 
-    return response
+    return JSONResponse(content=response, headers=CORS_HEADERS)
 
 
 @router.get("/hls/{token}/index.m3u8")
@@ -355,7 +367,7 @@ async def serve_playlist(token: str) -> Response:
     if cached:
         ts, text, media_type, ttl = cached
         if ttl > 0 and pp._now() - ts < ttl:
-            return Response(content=text, media_type=media_type)
+            return Response(content=text, media_type=media_type, headers=CORS_HEADERS)
 
     resp = await pp._fetch(upstream_url)
     try:
@@ -374,7 +386,7 @@ async def serve_playlist(token: str) -> Response:
         ttl = pp._playlist_ttl_from_response(resp.headers, text)
         if ttl > 0:
             pp.playlist_cache[cache_key] = (pp._now(), rewritten, "application/vnd.apple.mpegurl", ttl)
-        return Response(content=rewritten, media_type="application/vnd.apple.mpegurl")
+        return Response(content=rewritten, media_type="application/vnd.apple.mpegurl", headers=CORS_HEADERS)
     finally:
         await resp.aclose()
 
@@ -386,7 +398,8 @@ async def serve_segment(playlist_token: str, seg_token: str, ext: str, request: 
     cache_key = pp._media_cache_key(upstream_url, range_header)
     cached = pp.segment_cache.get(cache_key)
     if cached is not None and not range_header:
-        return Response(content=cached, media_type=pp._guess_media_type(upstream_url, httpx.Headers()))
+        headers = CORS_HEADERS.copy()
+        return Response(content=cached, media_type=pp._guess_media_type(upstream_url, httpx.Headers()), headers=headers)
 
     resp = await pp._fetch(upstream_url, request=request)
     if resp.status_code not in (200, 206):
@@ -396,6 +409,12 @@ async def serve_segment(playlist_token: str, seg_token: str, ext: str, request: 
 
     media_type = pp._guess_media_type(upstream_url, resp.headers)
 
+    resp_headers = CORS_HEADERS.copy()
+    for k in ("accept-ranges", "content-length", "content-range", "cache-control", "x-cache-source"):
+        val = resp.headers.get(k)
+        if val is not None:
+            resp_headers["-".join(part.capitalize() for part in k.split("-"))] = val
+
     if not range_header and media_type in {"video/mp2t", "video/mp4", "video/iso.segment", "audio/aac"}:
         content = await resp.aread()
         await resp.aclose()
@@ -404,17 +423,7 @@ async def serve_segment(playlist_token: str, seg_token: str, ext: str, request: 
         return Response(
             content=content,
             media_type=media_type,
-            headers={
-                k: v
-                for k, v in {
-                    "Accept-Ranges": resp.headers.get("accept-ranges"),
-                    "Content-Length": resp.headers.get("content-length"),
-                    "Content-Range": resp.headers.get("content-range"),
-                    "Cache-Control": resp.headers.get("cache-control"),
-                    "X-Cache-Source": resp.headers.get("x-cache-source"),
-                }.items()
-                if v is not None
-            },
+            headers=resp_headers,
             status_code=resp.status_code,
         )
 
@@ -429,17 +438,7 @@ async def serve_segment(playlist_token: str, seg_token: str, ext: str, request: 
         streamer(),
         status_code=resp.status_code,
         media_type=media_type,
-        headers={
-            k: v
-            for k, v in {
-                "Accept-Ranges": resp.headers.get("accept-ranges"),
-                "Content-Length": resp.headers.get("content-length"),
-                "Content-Range": resp.headers.get("content-range"),
-                "Cache-Control": resp.headers.get("cache-control"),
-                "X-Cache-Source": resp.headers.get("x-cache-source"),
-            }.items()
-            if v is not None
-        },
+        headers=resp_headers,
     )
 
 
@@ -452,7 +451,9 @@ async def serve_key(playlist_token: str, asset_token: str, request: Request) -> 
             body = await pp._read_small_response(resp)
             raise HTTPException(status_code=resp.status_code, detail=body.decode("utf-8", "replace")[:500])
         content = await resp.aread()
-        return Response(content=content, media_type=resp.headers.get("content-type", pp.MEDIA_CT["key"]))
+        headers = CORS_HEADERS.copy()
+        headers["Content-Type"] = resp.headers.get("content-type", pp.MEDIA_CT["key"])
+        return Response(content=content, media_type=headers["Content-Type"], headers=headers)
     finally:
         await resp.aclose()
 
@@ -466,7 +467,10 @@ async def serve_init(playlist_token: str, asset_token: str, ext: str, request: R
             body = await pp._read_small_response(resp)
             raise HTTPException(status_code=resp.status_code, detail=body.decode("utf-8", "replace")[:500])
         content = await resp.aread()
-        return Response(content=content, media_type=pp._guess_media_type(upstream_url, resp.headers))
+        headers = CORS_HEADERS.copy()
+        media_type = pp._guess_media_type(upstream_url, resp.headers)
+        headers["Content-Type"] = media_type
+        return Response(content=content, media_type=media_type, headers=headers)
     finally:
         await resp.aclose()
 
@@ -487,15 +491,22 @@ async def proxy_passthrough(url: str, request: Request) -> Response:
         body = await pp._read_small_response(resp)
         await resp.aclose()
         if url.endswith(".vtt") or url.endswith(".srt") or "/subs/" in url:
-            return Response(content="WEBVTT\n\n", media_type="text/vtt")
+            return Response(content="WEBVTT\n\n", media_type="text/vtt", headers=CORS_HEADERS)
         raise HTTPException(status_code=resp.status_code, detail=body.decode("utf-8", "replace")[:500])
 
     media_type = pp._guess_media_type(url, resp.headers)
+    
+    resp_headers = CORS_HEADERS.copy()
+    for k in ("accept-ranges", "content-length", "content-range", "cache-control"):
+        val = resp.headers.get(k)
+        if val is not None:
+            resp_headers["-".join(part.capitalize() for part in k.split("-"))] = val
+
     if pp._is_playlist_url(url, media_type):
         try:
             body = await resp.aread()
             text = body.decode("utf-8", "replace")
-            return Response(content=text, media_type="application/vnd.apple.mpegurl")
+            return Response(content=text, media_type="application/vnd.apple.mpegurl", headers=resp_headers)
         finally:
             await resp.aclose()
 
@@ -509,15 +520,7 @@ async def proxy_passthrough(url: str, request: Request) -> Response:
     return StreamingResponse(
         streamer(),
         media_type=media_type,
-        headers={
-            k: v
-            for k, v in {
-                "Accept-Ranges": resp.headers.get("accept-ranges"),
-                "Content-Length": resp.headers.get("content-length"),
-                "Content-Range": resp.headers.get("content-range"),
-            }.items()
-            if v is not None
-        },
+        headers=resp_headers,
     )
 
 
@@ -544,7 +547,7 @@ async def fetch_and_decrypt(
     imdb_id: Optional[str] = Query(None, alias="imdbId"),
     enc: str = Query("2"),
 ) -> dict:
-    return await pp.fetch_and_decrypt_stream(
+    data = await pp.fetch_and_decrypt_stream(
         tmdb_id=tmdb_id,
         media_type=media_type,
         season=season,
@@ -554,6 +557,7 @@ async def fetch_and_decrypt(
         imdb_id=imdb_id,
         enc=enc,
     )
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/api/player/episodes/{media_id}")
@@ -562,7 +566,6 @@ async def get_player_episodes(
     db: Session = Depends(get_cache_db),
     map_db: Session = Depends(get_mapping_db)
 ) -> dict:
-    """Returns structured seasons and episode list for player episode & season switcher."""
     try:
         media_details = await get_media_details(media_id=media_id, db=db, map_db=map_db)
         if isinstance(media_details, BaseModel):
@@ -572,22 +575,22 @@ async def get_player_episodes(
         else:
             data = {}
 
-        return {
+        return JSONResponse(content={
             "media_id": media_id,
             "title": data.get("title", ""),
             "type": data.get("type", "movie"),
             "seasons": data.get("seasons", []),
             "episodes": data.get("episodes", []),
-        }
+        }, headers=CORS_HEADERS)
     except Exception as e:
         logger.warning("Unable to fetch player episodes for %s: %s", media_id, e)
-        return {
+        return JSONResponse(content={
             "media_id": media_id,
             "title": "",
             "type": "movie",
             "seasons": [],
             "episodes": [],
-        }
+        }, headers=CORS_HEADERS)
 
 
 # --- CDN Live TV & Sports ---
@@ -616,7 +619,7 @@ async def get_streams() -> dict:
     current_time = pp._now()
     async with pp._streams_cache_lock:
         if pp._streams_cache is not None and (current_time - pp._streams_cache_time < 3600):
-            return pp._streams_cache
+            return JSONResponse(content=pp._streams_cache, headers=CORS_HEADERS)
 
         headers = {
             "User-Agent": pp.USER_AGENT,
@@ -664,54 +667,61 @@ async def get_streams() -> dict:
         pp._streams_cache = result_payload
         pp._streams_cache_time = current_time
         
-        return result_payload
+        return JSONResponse(content=result_payload, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/all")
 async def wf_all(date: Optional[str] = None, hasstream: bool = False, sport: Optional[str] = Query(None)):
-    return await pp._handle_sports_matches("all", date, hasstream=hasstream, sport_query=sport)
+    data = await pp._handle_sports_matches("all", date, hasstream=hasstream, sport_query=sport)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/popular")
 async def wf_popular(date: Optional[str] = None, hasstream: bool = False, sport: Optional[str] = Query(None)):
-    return await pp._handle_sports_matches("popular", date, hasstream=hasstream, sport_query=sport)
+    data = await pp._handle_sports_matches("popular", date, hasstream=hasstream, sport_query=sport)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/live")
 async def wf_live(hasstream: bool = False, sport: Optional[str] = Query(None)):
-    return await pp._handle_sports_matches("live", None, hasstream=hasstream, sport_query=sport)
+    data = await pp._handle_sports_matches("live", None, hasstream=hasstream, sport_query=sport)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/popular/live")
 async def wf_popular_live(hasstream: bool = False, sport: Optional[str] = Query(None)):
-    return await pp._handle_sports_matches("popular/live", None, hasstream=hasstream, sport_query=sport)
+    data = await pp._handle_sports_matches("popular/live", None, hasstream=hasstream, sport_query=sport)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/{sport}")
 async def wf_sport(sport: str, date: Optional[str] = None, hasstream: bool = False):
-    return await pp._handle_sports_matches(sport, date, hasstream=hasstream)
+    data = await pp._handle_sports_matches(sport, date, hasstream=hasstream)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/{sport}/popular")
 async def wf_sport_popular(sport: str, date: Optional[str] = None, hasstream: bool = False):
-    return await pp._handle_sports_matches(f"{sport}/popular", date, hasstream=hasstream)
+    data = await pp._handle_sports_matches(f"{sport}/popular", date, hasstream=hasstream)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/sports/matches/{sport}/live")
 async def wf_sport_live(sport: str, hasstream: bool = False):
-    return await pp._handle_sports_matches(f"{sport}/live", None, hasstream=hasstream)
+    data = await pp._handle_sports_matches(f"{sport}/live", None, hasstream=hasstream)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 @router.get("/api/stream/metadata")
 async def get_stream_metadata(token: str = Query(...)) -> dict:
-    return await pp.get_stream_metadata_lookup(token)
+    data = await pp.get_stream_metadata_lookup(token)
+    return JSONResponse(content=data, headers=CORS_HEADERS)
 
 
 # --- Player UI Routes ---
 
 @router.get("/player/browse", response_class=HTMLResponse)
 async def ui_browse(request: Request):
-    """Serves the Browse / Catalog UI."""
     return templates.TemplateResponse(request, "browse.html", {"request": request})
 
 
@@ -721,7 +731,6 @@ async def ui_player_live(
     stream_url: Optional[str] = Query(None, alias="stream_url"),
     stream_sources: Optional[str] = Query(None),
 ):
-    """Serves the Player UI for Live Streams."""
     parsed_sources: list[dict] = []
     if stream_sources:
         try:
@@ -779,7 +788,6 @@ async def ui_player_stream_general(
     is_live: bool = Query(False),
     stream_sources: Optional[str] = Query(None),
 ):
-    """Serves the Unified Player UI for direct streams, payloads, anime, or live feeds."""
     parsed_sources: list[dict] = []
     if stream_sources:
         try:
@@ -822,7 +830,6 @@ async def ui_player_stream(
     year: Optional[int] = Query(None),
     imdbId: Optional[str] = Query(None, alias="imdbId"),
 ):
-    """Serves the Player UI passing metadata to the Jinja template."""
     return templates.TemplateResponse(
         request,
         "player.html",
