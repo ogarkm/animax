@@ -1,0 +1,15 @@
+.git
+.venv
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.pytest_cache
+.vscode
+*.log
+proxy.db
+app/databases/*.db
+app/databases/*.db-shm
+app/databases/*.db-wal
