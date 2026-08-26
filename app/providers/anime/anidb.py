@@ -91,7 +91,16 @@ class AniDBProvider(BaseProvider):
         return h
 
     async def _cf_get(self, url: str, headers: dict):
-        """Bypasses Cloudflare by spoofing Chrome's TLS Fingerprint"""
+        """Routes through the residential tunnel if connected; falls back to curl_cffi on local."""
+        ws_connected = pp.tunnel_websocket is not None
+        poll_connected = pp.poll_tunnel_last_seen is not None and (pp.time.time() - pp.poll_tunnel_last_seen) <= pp.TUNNEL_CLIENT_TIMEOUT
+        
+        if (ws_connected or poll_connected) and not pp.NO_TUNNEL:
+            try:
+                return await pp._request_via_tunnel("GET", url, headers=headers)
+            except Exception as e:
+                print(f"[AniDB] Tunnel request failed, falling back: {e}")
+
         if HAS_CURL_CFFI:
             async with AsyncSession(impersonate="chrome") as session:
                 return await session.get(url, headers=headers)
