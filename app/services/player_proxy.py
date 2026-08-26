@@ -78,7 +78,7 @@ UPSTREAM_HEADERS = {
     "sec-fetch-site": "cross-site",
 }
 
-NO_TUNNEL = False
+NO_TUNNEL = True
 MEDIA_CT = {
     "m3u8": "application/vnd.apple.mpegurl",
     "ts": "video/mp2t",
