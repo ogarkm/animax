@@ -885,16 +885,17 @@
 
         function renderEpisodeCard(ep) {
             const targetMappedId = ep.mapped_id || currentMedia.id;
+            const absNum = ep.absolute_number || ep.episode_number || 1;
             return `
                 <div class="episode-card" 
                      data-season="${ep.season_number}" 
-                     onclick="playEpisode('${targetMappedId}', ${ep.absolute_number || 1})">
+                     onclick="playEpisode('${targetMappedId}', ${absNum})">
                     <div class="ep-thumb-wrap">
                         <img class="ep-thumb" src="${ep.thumbnail_url || currentMedia.banner_url || ''}" loading="lazy" alt="">
-                        <span class="ep-number">EP ${ep.episode_number || 1}</span>
+                        <span class="ep-number">EP ${absNum}</span>
                     </div>
                     <div class="ep-card-body">
-                        <div class="ep-card-title">${ep.title || `Episode ${ep.episode_number || 1}`}</div>
+                        <div class="ep-card-title">${ep.title || `Episode ${absNum}`}</div>
                         <div class="ep-card-desc">${ep.synopsis || 'No synopsis available.'}</div>
                     </div>
                 </div>

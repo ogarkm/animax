@@ -43,6 +43,21 @@ class PlayerEpisodesTests(unittest.TestCase):
         self.assertEqual(data["media_id"], "invalid_9999999")
         self.assertEqual(data["episodes"], [])
 
+    def test_skip_times_endpoint(self):
+        """Verify /api/player/skip-times/{media_id} returns skip segments for anime (e.g. m16498)."""
+        response = self.client.get("/api/player/skip-times/m16498?episode=1")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("found", data)
+        self.assertIn("skips", data)
+        if data["found"]:
+            self.assertGreater(len(data["skips"]), 0)
+            first_skip = data["skips"][0]
+            self.assertIn("type", first_skip)
+            self.assertIn("start", first_skip)
+            self.assertIn("end", first_skip)
+            self.assertGreater(first_skip["end"], first_skip["start"])
+
 
 if __name__ == "__main__":
     unittest.main()

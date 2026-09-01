@@ -21,6 +21,8 @@ from pydantic import BaseModel
 
 from app.core.database import get_cache_db, get_mapping_db
 from app.routers.discovery import get_media_details
+from app.services.mapping_engine import MappingEngine
+from app.providers.metadata.anilist import get_anilist_details
 from app.services import player_proxy as pp
 
 logger = logging.getLogger("animax-player-router")
@@ -282,6 +284,37 @@ async def websocket_party(websocket: WebSocket, room_id: str):
             msg_type = message.get("type")
             if msg_type == "ping":
                 await websocket.send_text(json.dumps({"type": "pong"}))
+                continue
+
+            if msg_type in ("change_episode", "episode"):
+                season = str(message.get("season", "") or "")
+                episode = str(message.get("episode", "") or "")
+                absolute_number = message.get("absolute_number")
+                mapped_id = message.get("mapped_id", "")
+                ep_title = message.get("title", "")
+                player_path = message.get("player_path", "")
+
+                async with pp.party_lock:
+                    if season:
+                        room.season = season
+                    if episode:
+                        room.episode = episode
+                    if player_path:
+                        room.query_params = player_path
+                    room.position = 0.0
+                    room.updated_at = time.time()
+                    room.playing = True
+
+                await pp._party_broadcast(room_code, {
+                    "type": "change_episode",
+                    "season": season,
+                    "episode": episode,
+                    "absolute_number": absolute_number,
+                    "mapped_id": mapped_id,
+                    "title": ep_title,
+                    "player_path": player_path,
+                    "from": client_id,
+                }, exclude_client_id=client_id)
                 continue
 
             if msg_type not in ("play", "pause", "seek", "sync"):
@@ -579,6 +612,13 @@ async def get_player_episodes(
             "media_id": media_id,
             "title": data.get("title", ""),
             "type": data.get("type", "movie"),
+            "description": data.get("description", "") or data.get("synopsis", ""),
+            "clear_logo_url": data.get("clear_logo_url") or data.get("logo_url"),
+            "banner_url": data.get("banner_url"),
+            "poster_url": data.get("poster_url"),
+            "release_year": data.get("release_year"),
+            "rating": data.get("rating"),
+            "genres": data.get("genres", []),
             "seasons": data.get("seasons", []),
             "episodes": data.get("episodes", []),
         }, headers=CORS_HEADERS)
@@ -591,6 +631,100 @@ async def get_player_episodes(
             "seasons": [],
             "episodes": [],
         }, headers=CORS_HEADERS)
+
+
+@router.get("/api/player/skip-times/{media_id}")
+async def get_skip_times(
+    media_id: str,
+    episode: int = Query(1, description="Episode number (absolute for anime)"),
+    db: Session = Depends(get_cache_db),
+    map_db: Session = Depends(get_mapping_db)
+) -> dict:
+    """
+    Fetches AniSkip intro/outro/recap skip times for anime playback.
+    """
+    try:
+        mal_id: Optional[int] = None
+        clean_id = media_id.strip()
+
+        # 1. Direct MAL id prefix (e.g. 'm16498', 'mal_16498')
+        if clean_id.startswith("m") and not clean_id.startswith("movie"):
+            num_part = ''.join(c for c in clean_id if c.isdigit())
+            if num_part:
+                mal_id = int(num_part)
+
+        # 2. Query mapping database
+        if not mal_id:
+            try:
+                engine = MappingEngine(map_db)
+                all_ids = engine.get_all_ids(clean_id)
+                if all_ids and all_ids.get("mal_id"):
+                    mal_id = all_ids.get("mal_id")
+            except Exception as me:
+                logger.debug("Mapping engine lookup failed for %s: %s", clean_id, me)
+
+        # 3. If AniList ID ('a16498'), lookup AniList details to retrieve idMal
+        if not mal_id and clean_id.startswith("a"):
+            try:
+                num_part = ''.join(c for c in clean_id if c.isdigit())
+                if num_part:
+                    anilist_data = await get_anilist_details(anilist_id=int(num_part))
+                    if anilist_data and anilist_data.get("idMal"):
+                        mal_id = int(anilist_data["idMal"])
+            except Exception as ae:
+                logger.debug("AniList idMal lookup failed for %s: %s", clean_id, ae)
+
+        if not mal_id:
+            return JSONResponse(content={"found": False, "skips": []}, headers=CORS_HEADERS)
+
+        # 4. Fetch from AniSkip API
+        aniskip_url = f"https://api.aniskip.com/v2/skip-times/{mal_id}/{episode}?types=op&types=ed&types=mixed-op&types=mixed-ed&types=recap&episodeLength=0"
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            resp = await client.get(aniskip_url, headers={"User-Agent": "Animax/1.0", "Accept": "application/json"})
+            if resp.status_code != 200:
+                return JSONResponse(content={"found": False, "skips": []}, headers=CORS_HEADERS)
+            data = resp.json()
+            if not data.get("found"):
+                return JSONResponse(content={"found": False, "skips": []}, headers=CORS_HEADERS)
+
+            results = data.get("results", [])
+            skips = []
+            seen_types = set()
+            for r in results:
+                stype = r.get("skipType", "")
+                interval = r.get("interval", {})
+                start = float(interval.get("startTime", 0) or 0)
+                end = float(interval.get("endTime", 0) or 0)
+                if end <= start:
+                    continue
+
+                if stype in ("op", "mixed-op"):
+                    norm_type = "intro"
+                elif stype in ("ed", "mixed-ed"):
+                    norm_type = "outro"
+                elif stype == "recap":
+                    norm_type = "recap"
+                else:
+                    norm_type = "intro"
+
+                if norm_type not in seen_types:
+                    seen_types.add(norm_type)
+                    skips.append({
+                        "type": norm_type,
+                        "start": start,
+                        "end": end,
+                    })
+
+            return JSONResponse(content={
+                "found": len(skips) > 0,
+                "mal_id": mal_id,
+                "episode": episode,
+                "skips": skips,
+            }, headers=CORS_HEADERS)
+
+    except Exception as e:
+        logger.warning("Error fetching skip times for %s ep %s: %s", media_id, episode, e)
+        return JSONResponse(content={"found": False, "skips": []}, headers=CORS_HEADERS)
 
 
 # --- CDN Live TV & Sports ---

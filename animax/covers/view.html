@@ -451,7 +451,8 @@
             }
         }
 
-        function loadOffer(index) {
+        let lastPlaybackPosition = 0;
+        function loadOffer(index, resumeTime = 0) {
             if (!availableOffers || index < 0 || index >= availableOffers.length) return;
             currentOfferIndex = index;
             const selectedOffer = availableOffers[index];
@@ -461,7 +462,7 @@
             const formattedSources = availableOffers.map((offer, idx) => ({
                 id: `offer-${idx}-${offer.provider}`,
                 provider: (offer.provider || 'Provider').toUpperCase(),
-                server: `${(offer.provider || 'Server').toUpperCase()} (${offer.dub ? 'DUB' : 'SUB'})`,
+                server: (offer.provider || 'Server').toUpperCase(),
                 quality: offer.quality || 'Auto',
                 title: `${offer.provider} ${offer.dub ? 'Dub' : 'Sub'}`,
                 type: offer.type,
@@ -473,22 +474,32 @@
             const separator = targetStreamUrl.includes('?') ? '&' : '?';
             targetStreamUrl = `${targetStreamUrl}${separator}stream_sources=${sourcesPayload}`;
 
+            if (resumeTime && resumeTime > 0) {
+                targetStreamUrl = `${targetStreamUrl}&t=${Math.floor(resumeTime)}`;
+            }
+
             initializeIframeStream(targetStreamUrl);
         }
 
         // Handle provider switch and episode change requests from child iframe
         window.addEventListener('message', (event) => {
             if (!event.data) return;
-            if (event.data.type === 'SWITCH_PROVIDER' || event.data.type === 'TRY_NEXT_PROVIDER') {
+            if (event.data.type === 'PLAYBACK_PROGRESS') {
+                if (typeof event.data.currentTime === 'number') {
+                    lastPlaybackPosition = event.data.currentTime;
+                }
+            } else if (event.data.type === 'SWITCH_PROVIDER' || event.data.type === 'TRY_NEXT_PROVIDER') {
                 if (availableOffers.length > 1) {
                     const nextIdx = (currentOfferIndex + 1) % availableOffers.length;
-                    loadOffer(nextIdx);
+                    loadOffer(nextIdx, lastPlaybackPosition);
                 }
             } else if (event.data.type === 'EPISODE_CHANGED') {
+                lastPlaybackPosition = 0;
                 const ep = event.data;
                 // Gracefully update browser URL parameters without reloading page
                 const currentUrl = new URL(window.location.href);
-                if (ep.episode) currentUrl.searchParams.set('episode', ep.episode);
+                const displayEpNum = ep.absolute_number || ep.episode;
+                if (displayEpNum) currentUrl.searchParams.set('episode', displayEpNum);
                 if (ep.season) currentUrl.searchParams.set('season', ep.season);
                 // Anime seasons can map to a different underlying id (AniList
                 // season-chain stitching in discovery.py), so keep the URL's
@@ -497,13 +508,13 @@
                 if (ep.mapped_id) currentUrl.searchParams.set('id', ep.mapped_id);
                 window.history.replaceState({}, '', currentUrl.toString());
                 if (ep.mapped_id) currentMediaId = ep.mapped_id;
-                if (ep.episode) currentEpisodeNum = ep.episode;
+                if (displayEpNum) currentEpisodeNum = displayEpNum;
 
                 // Update info panel metadata, synopsis, and ambient backdrop —
                 // same elements/pattern as updateConsoleUI() uses on initial load.
                 const infoTarget = document.getElementById('episode-info-target');
                 if (infoTarget) {
-                    const labelText = ep.episode ? `Episode ${ep.episode}: ${ep.title || ''}` : '';
+                    const labelText = displayEpNum ? `Episode ${displayEpNum}: ${ep.title || ''}` : '';
                     infoTarget.innerHTML = `
                         ${labelText ? `<div class="episode-label">${labelText}</div>` : ''}
                         <p class="episode-synopsis">${ep.synopsis || ''}</p>
