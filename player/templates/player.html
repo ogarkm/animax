@@ -1036,39 +1036,50 @@
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    const metaTitle = urlParams.get('title') || META_TITLE;
+    const metaTitle = urlParams.get('title') || (META_TITLE !== 'None' ? META_TITLE : '');
     const metaLogo = urlParams.get('logo');
     const metaSynopsis = urlParams.get('synopsis');
-    const metaSeason = urlParams.get('season') || (SEASON_ID !== 'None' ? SEASON_ID : null);
-    const metaEpisode = urlParams.get('episode') || (EPISODE_ID !== 'None' ? EPISODE_ID : null);
+    const metaSeason = urlParams.get('season') || urlParams.get('seasonId') || (SEASON_ID !== 'None' ? SEASON_ID : null);
+    const metaEpisode = urlParams.get('episode') || urlParams.get('episodeId') || (EPISODE_ID !== 'None' ? EPISODE_ID : null);
     const metaYear = urlParams.get('year') || (META_YEAR !== 'None' ? META_YEAR : null);
 
     if (metaTitle) {
         topLeftTitle.textContent = metaTitle;
         if (metaSeason && metaEpisode) {
             topLeftSubtitle.textContent = `Season ${metaSeason} • Episode ${metaEpisode}`;
+            topLeftSubtitle.style.display = 'block';
+        } else if (metaEpisode) {
+            topLeftSubtitle.textContent = `Episode ${metaEpisode}`;
+            topLeftSubtitle.style.display = 'block';
         } else if (metaYear) {
             topLeftSubtitle.textContent = metaYear;
+            topLeftSubtitle.style.display = 'block';
         } else {
             topLeftSubtitle.style.display = 'none';
         }
     }
 
-    if (metaLogo && metaLogo !== "null") {
+    if (metaLogo && metaLogo !== "null" && metaLogo !== "None") {
         pauseLogo.src = metaLogo;
         pauseLogo.classList.remove('hidden');
+        pauseTitle.classList.add('hidden');
     } else if (metaTitle) {
         pauseTitle.textContent = metaTitle;
         pauseTitle.classList.remove('hidden');
+        pauseLogo.classList.add('hidden');
     }
 
     if (metaSeason && metaEpisode) {
         pauseSubtitle.textContent = `Season ${metaSeason} • Episode ${metaEpisode}`;
         pauseSubtitle.classList.remove('hidden');
+    } else if (metaEpisode) {
+        pauseSubtitle.textContent = `Episode ${metaEpisode}`;
+        pauseSubtitle.classList.remove('hidden');
     }
 
-    if (metaSynopsis && metaSynopsis !== "null") {
+    if (metaSynopsis && metaSynopsis !== "null" && metaSynopsis !== "None") {
         pauseSynopsis.textContent = metaSynopsis;
+        pauseSynopsis.style.display = 'block';
     } else {
         pauseSynopsis.style.display = 'none';
     }
@@ -1836,6 +1847,41 @@
         }
     });
 
+    function updatePauseScreenForEpisode(ep, seriesSynopsisFallback = '') {
+        if (!ep) return;
+        const absNum = ep.absolute_number || ep.episode_number || currentAbsoluteNum;
+        const sNum = ep.season_number || currentSeasonNum;
+        const epTitle = ep.title || `Episode ${absNum}`;
+
+        // Top bar subtitle
+        if (topLeftSubtitle) {
+            topLeftSubtitle.textContent = allSeasons.length > 1 
+                ? `Season ${sNum} • Episode ${ep.episode_number || absNum}`
+                : `Episode ${absNum}`;
+            topLeftSubtitle.style.display = 'block';
+        }
+
+        // Pause screen subtitle
+        if (pauseSubtitle) {
+            const hasCustomTitle = ep.title && ep.title !== `Episode ${absNum}` && ep.title !== `Episode ${ep.episode_number}`;
+            pauseSubtitle.textContent = allSeasons.length > 1
+                ? `Season ${sNum} • Episode ${ep.episode_number || absNum}${hasCustomTitle ? ` • ${ep.title}` : ''}`
+                : `Episode ${absNum}${hasCustomTitle ? ` • ${ep.title}` : ''}`;
+            pauseSubtitle.classList.remove('hidden');
+        }
+
+        // Pause screen episode synopsis (or show description fallback)
+        if (pauseSynopsis) {
+            const synopsisText = (ep.synopsis && ep.synopsis.trim() && ep.synopsis !== 'null' && ep.synopsis !== 'None')
+                ? ep.synopsis
+                : (seriesSynopsisFallback || pauseSynopsis.textContent || '');
+            if (synopsisText && synopsisText.trim() && synopsisText !== 'null' && synopsisText !== 'None') {
+                pauseSynopsis.textContent = synopsisText;
+                pauseSynopsis.style.display = 'block';
+            }
+        }
+    }
+
     async function initPlayerEpisodes(mediaId) {
         if (!mediaId) return;
         playerMediaId = mediaId;
@@ -1847,18 +1893,37 @@
             allSeasons = data.seasons || [];
             allEpisodes = data.episodes || [];
 
+            // Apply series metadata to Pause Overlay & Top Bar
+            if (data.title && (!topLeftTitle.textContent || topLeftTitle.textContent === "Now Playing" || topLeftTitle.textContent === "Live stream" || topLeftTitle.textContent === "Stream")) {
+                topLeftTitle.textContent = data.title;
+            }
+            if (data.clear_logo_url && (!pauseLogo.src || pauseLogo.classList.contains('hidden'))) {
+                pauseLogo.src = data.clear_logo_url;
+                pauseLogo.classList.remove('hidden');
+                pauseTitle.classList.add('hidden');
+            } else if (data.title && pauseTitle.classList.contains('hidden') && pauseLogo.classList.contains('hidden')) {
+                pauseTitle.textContent = data.title;
+                pauseTitle.classList.remove('hidden');
+            }
+            if (data.description && (!pauseSynopsis.textContent || pauseSynopsis.style.display === 'none')) {
+                pauseSynopsis.textContent = data.description;
+                pauseSynopsis.style.display = 'block';
+            }
+
             if (allEpisodes.length > 0) {
                 if (episodesBtn) episodesBtn.classList.remove('hidden');
                 if (nextEpBtn) nextEpBtn.classList.remove('hidden');
 
                 const match = allEpisodes.find(e => 
-                    (e.season_number === currentSeasonNum && e.episode_number === currentEpisodeNum) ||
-                    e.absolute_number === currentEpisodeNum
-                );
+                    (e.absolute_number && (e.absolute_number === currentAbsoluteNum || e.absolute_number === currentEpisodeNum)) ||
+                    (e.season_number === currentSeasonNum && e.episode_number === currentEpisodeNum)
+                ) || allEpisodes[0];
+
                 if (match) {
                     currentSeasonNum = match.season_number || currentSeasonNum;
                     currentEpisodeNum = match.episode_number || currentEpisodeNum;
                     currentAbsoluteNum = match.absolute_number || currentEpisodeNum;
+                    updatePauseScreenForEpisode(match, data.description);
                 }
 
                 renderSeasonPills();
@@ -1975,10 +2040,7 @@
             activeStreamSourceId = formattedSources[selectedIdx]?.id || null;
             renderStreamMenu();
 
-            if (topLeftSubtitle) {
-                topLeftSubtitle.textContent = `EP ${currentAbsoluteNum}: ${ep.title || 'Episode ' + currentAbsoluteNum}`;
-                topLeftSubtitle.style.display = 'block';
-            }
+            updatePauseScreenForEpisode(ep);
 
             await selectStreamSource(selectedOffer);
             renderEpisodeList(currentSeasonNum);

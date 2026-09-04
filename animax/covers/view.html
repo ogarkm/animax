@@ -355,6 +355,7 @@
         }
 
         // ── Initialize Console metadata fetching sequences ──────
+        let cachedMediaDetails = null;
         async function fetchConsoleMetadata() {
             if (!currentMediaId) return;
 
@@ -362,6 +363,7 @@
                 const res = await fetch(`/api/media/${encodeURIComponent(currentMediaId)}`);
                 if (!res.ok) throw new Error();
                 const media = await res.json();
+                cachedMediaDetails = media;
 
                 updateConsoleUI(media);
             } catch (err) {
@@ -473,6 +475,20 @@
             const sourcesPayload = encodeURIComponent(JSON.stringify(formattedSources));
             const separator = targetStreamUrl.includes('?') ? '&' : '?';
             targetStreamUrl = `${targetStreamUrl}${separator}stream_sources=${sourcesPayload}`;
+
+            if (cachedMediaDetails) {
+                if (cachedMediaDetails.clear_logo_url && !targetStreamUrl.includes('logo=')) {
+                    targetStreamUrl += `&logo=${encodeURIComponent(cachedMediaDetails.clear_logo_url)}`;
+                }
+                if (cachedMediaDetails.title && !targetStreamUrl.includes('title=')) {
+                    targetStreamUrl += `&title=${encodeURIComponent(cachedMediaDetails.title)}`;
+                }
+                const activeEp = (cachedMediaDetails.episodes || []).find(e => e.absolute_number === currentEpisodeNum);
+                const epSynopsis = activeEp?.synopsis || cachedMediaDetails.description;
+                if (epSynopsis && !targetStreamUrl.includes('synopsis=')) {
+                    targetStreamUrl += `&synopsis=${encodeURIComponent(epSynopsis)}`;
+                }
+            }
 
             if (resumeTime && resumeTime > 0) {
                 targetStreamUrl = `${targetStreamUrl}&t=${Math.floor(resumeTime)}`;
