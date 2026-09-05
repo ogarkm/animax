@@ -1100,9 +1100,15 @@
 
     function getResumeStorageKey() {
         if (IS_LIVE) return null;
-        const mediaKey = (TMDB_ID && TMDB_ID !== 'None') ? TMDB_ID : (urlParams.get('media_id') || urlParams.get('id') || EP_ID || 'general');
-        const season = (SEASON_ID && SEASON_ID !== 'None') ? SEASON_ID : (urlParams.get('seasonId') || urlParams.get('season') || '1');
-        const episode = (EPISODE_ID && EPISODE_ID !== 'None') ? EPISODE_ID : (urlParams.get('episodeId') || urlParams.get('episode') || '1');
+        const mediaKey = (TMDB_ID && TMDB_ID !== 'None') 
+            ? TMDB_ID 
+            : (urlParams.get('media_id') || urlParams.get('id') || playerMediaId || metaTitle || 'general');
+        const season = (SEASON_ID && SEASON_ID !== 'None') 
+            ? SEASON_ID 
+            : (urlParams.get('seasonId') || urlParams.get('season') || String(currentSeasonNum || 1));
+        const episode = (EPISODE_ID && EPISODE_ID !== 'None') 
+            ? EPISODE_ID 
+            : (urlParams.get('episodeId') || urlParams.get('episode') || String(currentAbsoluteNum || 1));
         return `${STORAGE_PREFIX}:resume:${mediaKey}:s${season}:e${episode}`;
     }
 
@@ -1123,7 +1129,9 @@
         const key = getResumeStorageKey();
         if (!key) return;
         if (!isFinite(time) || time < 0) return;
-        localStorage.setItem(key, JSON.stringify({ time, savedAt: Date.now() }));
+        try {
+            localStorage.setItem(key, JSON.stringify({ time, savedAt: Date.now() }));
+        } catch(e) {}
     }
 
     function getPreferredSubtitle() {
@@ -1374,42 +1382,96 @@
         updateAudioToggleUI();
     }
 
-    async function selectStreamSource(source) {
+    async function selectStreamSource(source, isRemotePartyAction = false) {
         if (!source?.url) return;
         if (typeof source.dub === 'boolean') setPreferredDub(source.dub);
         const currentPos = Math.floor(video.currentTime || 0);
-        
-        // Handoff to external provider player routes
-        if (source.url.startsWith('/player/stream') || (source.url.startsWith('http') && source.url.includes('/player/stream')) || source.url.startsWith('/player/live')) {
-            const targetUrl = new URL(source.url, window.location.origin);
-            if (streamSources && streamSources.length > 0 && !targetUrl.searchParams.get('stream_sources')) {
-                targetUrl.searchParams.set('stream_sources', JSON.stringify(streamSources));
-            }
-            if (partyRoomId && !targetUrl.searchParams.get('party')) {
-                targetUrl.searchParams.set('party', partyRoomId);
-            }
-            if (currentPos > 0) {
-                targetUrl.searchParams.set('t', String(currentPos));
-                try {
-                    sessionStorage.setItem('animax_switch_resume_time', String(currentPos));
-                } catch(e) {}
-            }
-            if (targetUrl.pathname + targetUrl.search !== window.location.pathname + window.location.search) {
-                window.location.href = targetUrl.toString();
-                return;
-            }
-        }
-        
-        // Internal payload route extractor
-        if (source.url.startsWith('/api/player/payload')) {
+        saveResumeTime(currentPos);
+
+        const targetUrl = new URL(source.url, window.location.origin);
+        const prov = targetUrl.searchParams.get('provider') || (typeof source.provider === 'string' ? source.provider.toLowerCase() : null);
+        const ep = targetUrl.searchParams.get('ep_id');
+
+        activeStreamSourceId = source.id || (prov ? `offer-${prov}` : source.url);
+        renderStreamMenu();
+
+        // 1. Internal payload route or /player/stream with provider & ep_id
+        if (source.url.startsWith('/api/player/payload') || (prov && ep)) {
             try {
-                loader.classList.remove('hidden');
-                const res = await fetch(source.url);
+                if (loader) loader.classList.remove('hidden');
+                const payloadUrl = source.url.startsWith('/api/player/payload')
+                    ? source.url
+                    : `/api/player/payload?provider=${encodeURIComponent(prov)}&ep_id=${encodeURIComponent(ep)}`;
+                
+                const res = await fetch(payloadUrl);
                 if (!res.ok) throw new Error("Payload extraction failed");
                 const data = await res.json();
-                activeStreamSourceId = source.id;
-                renderStreamMenu();
+
+                // Update tracks in-place
+                const tracks = data.tracks || [];
+                [...video.querySelectorAll('track')].forEach(t => t.remove());
+                const offTrackItemHtml = '<div class="settings-item active" id="subOff"><span>Off</span></div>';
+                subtitleList.innerHTML = offTrackItemHtml;
+                const offItem = subtitleList.querySelector('#subOff');
+                offItem.addEventListener('click', () => {
+                    [...video.textTracks].forEach(t => t.mode = 'disabled');
+                    [...subtitleList.children].forEach(c => c.classList.remove('active'));
+                    offItem.classList.add('active');
+                    valSubtitles.textContent = 'Off';
+                    savePreferredSubtitle('off');
+                    settingsMenu.classList.remove('open');
+                    isSettingsOpen = false;
+                });
+
+                if (tracks.length > 0) {
+                    tracks.forEach((track, i) => {
+                        const trackEl = document.createElement('track');
+                        trackEl.kind = track.kind || 'subtitles';
+                        trackEl.src = proxyUrl(track.file || track.url);
+                        trackEl.label = track.label || `Track ${i+1}`;
+                        trackEl.srclang = track.label ? track.label.slice(0, 2).toLowerCase() : 'en';
+                        trackEl.default = Boolean(track.default);
+                        trackEl.mode = 'disabled';
+                        video.appendChild(trackEl);
+
+                        const item = document.createElement('div');
+                        item.className = 'settings-item';
+                        item.innerHTML = `<span>${escapeHtml(track.label || `Track ${i+1}`)}</span>`;
+                        item.addEventListener('click', () => {
+                            const textTrack = trackEl.track;
+                            if (textTrack) {
+                                [...video.textTracks].forEach(t => t.mode = (t === textTrack) ? 'showing' : 'disabled');
+                            }
+                            [...subtitleList.children].forEach(c => c.classList.remove('active'));
+                            item.classList.add('active');
+                            valSubtitles.textContent = track.label || `Track ${i+1}`;
+                            settingsMenu.classList.remove('open');
+                            isSettingsOpen = false;
+                        });
+                        subtitleList.appendChild(item);
+                    });
+                }
+
+                currentPlaybackUrl = data.stream_url;
                 await switchSource(data.stream_url, currentPos);
+
+                // Update browser URL without full page reload
+                const currentUrl = new URL(window.location.href);
+                if (prov) currentUrl.searchParams.set('provider', prov);
+                if (ep) currentUrl.searchParams.set('ep_id', ep);
+                history.replaceState(null, '', currentUrl.toString());
+
+                // Broadcast to party members
+                if (!isRemotePartyAction && partySocket && partySocket.readyState === WebSocket.OPEN) {
+                    partySend('change_source', currentPos, {
+                        provider: prov,
+                        ep_id: ep,
+                        stream_url: data.stream_url,
+                        dub: source.dub,
+                        player_path: currentUrl.pathname + currentUrl.search
+                    });
+                }
+
                 if (streamMenu) streamMenu.classList.remove('open');
                 return;
             } catch (err) {
@@ -1417,16 +1479,24 @@
                 showErrorOverlay();
                 return;
             } finally {
-                loader.classList.add('hidden');
+                if (loader) loader.classList.add('hidden');
             }
         }
 
+        // 2. Direct or Proxied URL
         const normalizedUrl = normalizeStreamTarget(source.url);
         if (!normalizedUrl) return;
-        activeStreamSourceId = source.id || normalizedUrl;
         currentPlaybackUrl = normalizedUrl;
-        renderStreamMenu();
         await switchSource(normalizedUrl, currentPos);
+
+        if (!isRemotePartyAction && partySocket && partySocket.readyState === WebSocket.OPEN) {
+            partySend('change_source', currentPos, {
+                provider: source.provider || 'Server',
+                stream_url: normalizedUrl,
+                dub: source.dub
+            });
+        }
+
         if (streamMenu) streamMenu.classList.remove('open');
     }
 
@@ -1928,6 +1998,7 @@
 
                 renderSeasonPills();
                 renderEpisodeList(currentSeasonNum);
+                updateNextEpisodeBtnUI();
             }
         } catch (e) {
             console.warn("Unable to initialize player episodes:", e);
@@ -2002,6 +2073,38 @@
         });
     }
 
+    const sourcesCache = new Map();
+
+    function updateNextEpisodeBtnUI() {
+        if (!nextEpBtn) return;
+        if (IS_LIVE) {
+            nextEpBtn.classList.add('hidden');
+            return;
+        }
+        nextEpBtn.classList.remove('hidden');
+        if (allEpisodes && allEpisodes.length > 0) {
+            const currentIdx = allEpisodes.findIndex(e => 
+                (e.absolute_number && e.absolute_number === currentAbsoluteNum) || 
+                (e.episode_number === currentEpisodeNum && e.season_number === currentSeasonNum)
+            );
+            if (currentIdx !== -1 && currentIdx + 1 < allEpisodes.length) {
+                const nextEp = allEpisodes[currentIdx + 1];
+                const epLabel = nextEp.title || `Episode ${nextEp.absolute_number || nextEp.episode_number}`;
+                nextEpBtn.title = `Next: ${epLabel} (Shift+N)`;
+                nextEpBtn.style.opacity = '1';
+                nextEpBtn.style.pointerEvents = 'auto';
+            } else {
+                nextEpBtn.title = `No more episodes`;
+                nextEpBtn.style.opacity = '0.4';
+                nextEpBtn.style.pointerEvents = 'none';
+            }
+        } else {
+            nextEpBtn.title = `Next Episode (Shift+N)`;
+            nextEpBtn.style.opacity = '1';
+            nextEpBtn.style.pointerEvents = 'auto';
+        }
+    }
+
     async function switchEpisode(ep, isRemoteSync = false) {
         if (!ep) return;
         currentSeasonNum = ep.season_number || 1;
@@ -2015,15 +2118,22 @@
             // Load skip times for new episode
             loadSkipTimes(targetMappedId, currentAbsoluteNum);
 
-            const res = await fetch(`/api/sources/${encodeURIComponent(targetMappedId)}?episode=${currentAbsoluteNum}`);
-            if (!res.ok) throw new Error("Sources not found for episode");
+            // Fetch or get from cache
+            const cacheKey = `${targetMappedId}:ep${currentAbsoluteNum}`;
+            let offers = sourcesCache.get(cacheKey);
+            if (!offers) {
+                const res = await fetch(`/api/sources/${encodeURIComponent(targetMappedId)}?episode=${currentAbsoluteNum}`);
+                if (!res.ok) throw new Error("Sources not found for episode");
+                offers = await res.json();
+                if (offers && offers.length > 0) {
+                    sourcesCache.set(cacheKey, offers);
+                }
+            }
 
-            const offers = await res.json();
             if (!offers || offers.length === 0) throw new Error("No offers available");
 
             const selectedIdx = pickOfferIndexByPreference(offers);
             const selectedOffer = offers[selectedIdx];
-            const targetUrl = selectedOffer.external_player_url || selectedOffer.url;
 
             const formattedSources = offers.map((offer, idx) => ({
                 id: `offer-${idx}-${offer.provider}`,
@@ -2041,20 +2151,48 @@
             renderStreamMenu();
 
             updatePauseScreenForEpisode(ep);
+            updateNextEpisodeBtnUI();
 
-            await selectStreamSource(selectedOffer);
+            await selectStreamSource(selectedOffer, isRemoteSync);
             renderEpisodeList(currentSeasonNum);
+
+            // Update browser URL query params
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('episode', String(currentEpisodeNum));
+            currentUrl.searchParams.set('episodeId', String(currentEpisodeNum));
+            currentUrl.searchParams.set('season', String(currentSeasonNum));
+            currentUrl.searchParams.set('seasonId', String(currentSeasonNum));
+            if (targetMappedId) currentUrl.searchParams.set('media_id', targetMappedId);
+            history.replaceState(null, '', currentUrl.toString());
 
             // Broadcast episode change to watch party peers
             if (!isRemoteSync && partySocket && partySocket.readyState === WebSocket.OPEN) {
+                const epParam = new URL(selectedOffer.url, window.location.origin).searchParams.get('ep_id');
                 partySend('change_episode', 0, {
                     season: ep.season_number,
                     episode: ep.episode_number,
                     absolute_number: currentAbsoluteNum,
                     mapped_id: targetMappedId,
                     title: ep.title,
-                    player_path: window.location.pathname + window.location.search
+                    provider: selectedOffer.provider,
+                    ep_id: epParam,
+                    player_path: currentUrl.pathname + currentUrl.search
                 });
+            }
+
+            // Pre-cache next episode in the background
+            if (allEpisodes && allEpisodes.length > 0) {
+                const currentIdx = allEpisodes.findIndex(e => (e.absolute_number && e.absolute_number === currentAbsoluteNum));
+                if (currentIdx !== -1 && currentIdx + 1 < allEpisodes.length) {
+                    const nextEpAbs = allEpisodes[currentIdx + 1].absolute_number || (currentAbsoluteNum + 1);
+                    const nextCacheKey = `${targetMappedId}:ep${nextEpAbs}`;
+                    if (!sourcesCache.has(nextCacheKey)) {
+                        fetch(`/api/sources/${encodeURIComponent(targetMappedId)}?episode=${nextEpAbs}`)
+                            .then(r => r.ok ? r.json() : null)
+                            .then(data => { if (data) sourcesCache.set(nextCacheKey, data); })
+                            .catch(() => {});
+                    }
+                }
             }
 
             window.parent.postMessage({
@@ -2076,23 +2214,65 @@
     }
 
     function playNextEpisode() {
-        if (!allEpisodes || allEpisodes.length === 0) return;
-        const currentIdx = allEpisodes.findIndex(e => e.absolute_number === currentAbsoluteNum || (e.episode_number === currentEpisodeNum && e.season_number === currentSeasonNum));
+        if (!allEpisodes || allEpisodes.length === 0) {
+            const derivedMediaId = urlParams.get('media_id') || urlParams.get('id') || (TMDB_ID && TMDB_ID !== "None" ? `tt${TMDB_ID}` : null) || playerMediaId;
+            if (derivedMediaId) {
+                const nextAbs = currentAbsoluteNum + 1;
+                switchEpisode({
+                    episode_number: currentEpisodeNum + 1,
+                    season_number: currentSeasonNum,
+                    absolute_number: nextAbs,
+                    mapped_id: derivedMediaId,
+                    title: `Episode ${nextAbs}`
+                });
+            }
+            return;
+        }
+        const currentIdx = allEpisodes.findIndex(e => 
+            (e.absolute_number && e.absolute_number === currentAbsoluteNum) || 
+            (e.episode_number === currentEpisodeNum && e.season_number === currentSeasonNum)
+        );
         if (currentIdx !== -1 && currentIdx + 1 < allEpisodes.length) {
-            switchEpisode(allEpisodes[currentIdx + 1]);
+            const nextEp = allEpisodes[currentIdx + 1];
+            partyShowToast(`Playing: ${nextEp.title || 'Episode ' + (nextEp.absolute_number || nextEp.episode_number)}`);
+            switchEpisode(nextEp);
+        } else {
+            partyShowToast("You're on the latest episode!");
         }
     }
 
+    // Keyboard shortcut Shift+N or N for next episode
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if ((e.shiftKey && (e.key === 'N' || e.key === 'n')) || (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey)) {
+            e.preventDefault();
+            playNextEpisode();
+        }
+    });
+
+    let autoNextTimeout = null;
+    let autoNextCountdownInterval = null;
+
     video.addEventListener('ended', () => {
-        if (!IS_LIVE && allEpisodes && allEpisodes.length > 0) {
-            window.parent.postMessage({
-                type: 'SHOW_TOAST',
-                message: 'Auto-playing next episode...',
-                icon: 'ph-play'
-            }, '*');
-            setTimeout(() => {
+        if (!IS_LIVE && (allEpisodes.length > 0 || playerMediaId)) {
+            let countdown = 5;
+            partyShowToast(`Next episode playing in ${countdown}s... [Shift+N to skip]`);
+            clearInterval(autoNextCountdownInterval);
+            clearTimeout(autoNextTimeout);
+
+            autoNextCountdownInterval = setInterval(() => {
+                countdown -= 1;
+                if (countdown > 0) {
+                    partyShowToast(`Next episode playing in ${countdown}s... [Shift+N to skip]`);
+                } else {
+                    clearInterval(autoNextCountdownInterval);
+                }
+            }, 1000);
+
+            autoNextTimeout = setTimeout(() => {
+                clearInterval(autoNextCountdownInterval);
                 playNextEpisode();
-            }, 2500);
+            }, 5000);
         }
     });
 
@@ -2166,20 +2346,55 @@
         const manifestUrl = resolvedUrl || url;
 
         let hasSought = false;
-        const seekToStart = () => {
+        const doSeek = () => {
             if (startTime > 0 && !hasSought) {
                 try {
-                    video.currentTime = startTime;
-                    hasSought = true;
+                    if (video.duration && isFinite(video.duration) && video.duration > 0) {
+                        video.currentTime = Math.min(startTime, Math.max(0, video.duration - 1));
+                        hasSought = true;
+                    } else {
+                        video.currentTime = startTime;
+                        hasSought = true;
+                    }
                 } catch(e) {}
             }
         };
 
+        const isDirectMp4 = manifestUrl.includes('.mp4');
+
+        if (isDirectMp4) {
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+            video.src = manifestUrl;
+            video.addEventListener('loadedmetadata', () => {
+                loader.classList.add('hidden');
+                doSeek();
+                if (playAfterLoad) {
+                    video.muted = false;
+                    video.play().catch(err => {
+                        if (err.name !== 'AbortError') {
+                            pauseOverlay.classList.add('active');
+                        }
+                    });
+                }
+            }, { once: true });
+            video.addEventListener('canplay', doSeek, { once: true });
+            return;
+        }
+
         if (Hls.isSupported()) {
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
             hlsInstance = new Hls({ 
                 maxMaxBufferLength: 30,
-                maxBufferSize: 64 * 1024 * 1024,
-                maxBufferLength: 10,
+                maxBufferSize: 32 * 1024 * 1024,
+                maxBufferLength: 15,
+                backBufferLength: 15,
+                capLevelToPlayerSize: true,
                 startPosition: startTime > 0 ? startTime : -1,
                 enableWorker: true,
                 xhrSetup: function(xhr, segUrl) {
@@ -2191,26 +2406,24 @@
             });
             hlsInstance.loadSource(manifestUrl);
             hlsInstance.attachMedia(video);
+
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
                 loader.classList.add('hidden');
-                seekToStart();
                 if (playAfterLoad) {
-                    video.muted = true;
-                    video.play().then(() => {
-                        video.muted = false;
-                        seekToStart();
-                    }).catch(err => {
+                    video.play().catch(err => {
                         if (err.name !== 'AbortError') {
-                            console.log("Autoplay was blocked or deferred:", err);
                             pauseOverlay.classList.add('active');
                         }
-                        playIcon.classList.remove('hidden');
-                        pauseIcon.classList.add('hidden');
                     });
                 }
             });
-            video.addEventListener('loadedmetadata', seekToStart, { once: true });
-            video.addEventListener('canplay', seekToStart, { once: true });
+
+            video.addEventListener('loadedmetadata', doSeek, { once: true });
+            video.addEventListener('canplay', doSeek, { once: true });
+            hlsInstance.on(Hls.Events.MEDIA_ATTACHED, () => {
+                if (startTime > 0) doSeek();
+            });
+
             hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
                 if (data.fatal) {
                     console.error('HLS load error', data);
@@ -2221,22 +2434,12 @@
             video.src = manifestUrl;
             video.addEventListener('loadedmetadata', () => {
                 loader.classList.add('hidden');
-                seekToStart();
+                doSeek();
                 if (playAfterLoad) {
-                    video.muted = true;
-                    video.play().then(() => {
-                        video.muted = false;
-                        seekToStart();
-                    }).catch(err => {
-                        if (err.name !== 'AbortError') {
-                            console.log("Autoplay was blocked or deferred:", err);
-                            pauseOverlay.classList.add('active');
-                        }
-                        playIcon.classList.remove('hidden');
-                        pauseIcon.classList.add('hidden');
-                    });
+                    video.play().catch(() => {});
                 }
             }, { once: true });
+            video.addEventListener('canplay', doSeek, { once: true });
         } else {
             console.error('No HLS support detected in this browser');
             showErrorOverlay();
@@ -2327,21 +2530,45 @@
         }
     }
 
+    let isRemoteSeeking = false;
+    let isRemoteSeekingTimeout = null;
+
     function partyApplyRemoteState(playing, position) {
-        partySuppressBroadcast = true;
-        clearTimeout(partySuppressTimeout);
+        if (!isFinite(position)) return;
 
-        const drift = Math.abs((video.currentTime || 0) - position);
-        if (drift > 0.75 && isFinite(position)) {
+        const drift = (video.currentTime || 0) - position;
+        const absDrift = Math.abs(drift);
+
+        // Large drift: hard seek
+        if (absDrift > 2.0) {
+            isRemoteSeeking = true;
+            clearTimeout(isRemoteSeekingTimeout);
+            partySuppressBroadcast = true;
             video.currentTime = position;
-        }
-        if (playing && video.paused) {
-            video.play().catch(() => {});
-        } else if (!playing && !video.paused) {
-            video.pause();
+            // isRemoteSeeking cleared by 'seeked' listener
+        } else if (absDrift > 0.3) {
+            // Small drift: gentle rate nudge — no seek needed
+            video.playbackRate = drift > 0 ? 0.95 : 1.05;
+            clearTimeout(isRemoteSeekingTimeout);
+            isRemoteSeekingTimeout = setTimeout(() => {
+                video.playbackRate = 1.0;
+            }, 2500);
+        } else {
+            // In sync
+            video.playbackRate = 1.0;
         }
 
-        partySuppressTimeout = setTimeout(() => { partySuppressBroadcast = false; }, 400);
+        if (playing && video.paused) {
+            partySuppressBroadcast = true;
+            clearTimeout(partySuppressTimeout);
+            video.play().catch(() => {});
+            partySuppressTimeout = setTimeout(() => { partySuppressBroadcast = false; }, 500);
+        } else if (!playing && !video.paused) {
+            partySuppressBroadcast = true;
+            clearTimeout(partySuppressTimeout);
+            video.pause();
+            partySuppressTimeout = setTimeout(() => { partySuppressBroadcast = false; }, 500);
+        }
     }
 
     function partyUpdateMembers(count) {
@@ -2350,14 +2577,22 @@
         partyToggleLabel.textContent = count > 1 ? `Party (${count})` : 'Watch Party';
     }
 
+    let partyReconnectAttempts = 0;
+    let partyReconnectTimer = null;
+    let partySyncInterval = null;
+
     function partyConnect(roomId) {
         if (partySocket) {
             try { partySocket.close(); } catch (e) {}
         }
+        clearInterval(partySyncInterval);
+        clearTimeout(partyReconnectTimer);
+
         const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         partySocket = new WebSocket(`${scheme}//${window.location.host}/ws/party/${roomId}`);
 
         partySocket.addEventListener('open', () => {
+            partyReconnectAttempts = 0;
             partyToggle.classList.add('active');
         });
 
@@ -2370,51 +2605,117 @@
                 if (partyIsHost) {
                     partySend(video.paused ? 'pause' : 'play', video.currentTime || 0);
                 } else {
-                    if (typeof msg.position === 'number') {
-                        partyApplyRemoteState(!!msg.playing, msg.position);
-                    }
-                    if (msg.episode && allEpisodes.length > 0) {
-                        const targetAbs = msg.absolute_number || parseInt(msg.episode || '1');
-                        if (targetAbs !== currentAbsoluteNum) {
-                            const matched = allEpisodes.find(e => (e.absolute_number && e.absolute_number === targetAbs) || e.episode_number === parseInt(msg.episode));
-                            if (matched) {
-                                switchEpisode(matched, true);
-                            }
+                    // ── Sync episode/show first (may trigger source + episode switch)
+                    const remoteAbs   = msg.absolute_number || parseInt(msg.episode || '0');
+                    const remoteMid   = msg.mapped_id;
+                    const remoteProv  = msg.provider;
+                    const remoteEpId  = msg.ep_id;
+
+                    const mediaMismatch   = remoteMid && remoteMid !== playerMediaId;
+                    const episodeMismatch = remoteAbs && remoteAbs !== currentAbsoluteNum;
+
+                    const doProviderSync = () => {
+                        if (remoteProv && remoteEpId) {
+                            const syntheticSrc = {
+                                url: msg.stream_url || `/api/player/payload?provider=${encodeURIComponent(remoteProv)}&ep_id=${encodeURIComponent(remoteEpId)}`,
+                                provider: remoteProv,
+                                dub: msg.dub || false,
+                            };
+                            selectStreamSource(syntheticSrc, true);
                         }
+                    };
+
+                    if (mediaMismatch) {
+                        initPlayerEpisodes(remoteMid).then(() => {
+                            const ep = allEpisodes.find(e =>
+                                (e.absolute_number && e.absolute_number === remoteAbs) ||
+                                e.episode_number === parseInt(msg.episode || '1')
+                            );
+                            if (ep) {
+                                switchEpisode(ep, true).then(doProviderSync);
+                            } else {
+                                doProviderSync();
+                            }
+                        });
+                    } else if (episodeMismatch && allEpisodes.length > 0) {
+                        const ep = allEpisodes.find(e =>
+                            (e.absolute_number && e.absolute_number === remoteAbs) ||
+                            e.episode_number === parseInt(msg.episode || '1')
+                        );
+                        if (ep) {
+                            switchEpisode(ep, true).then(doProviderSync);
+                        } else {
+                            doProviderSync();
+                        }
+                    } else {
+                        doProviderSync();
+                    }
+
+                    // ── Then apply playback position
+                    if (typeof msg.position === 'number') {
+                        // Small delay so stream swap can start first
+                        setTimeout(() => partyApplyRemoteState(!!msg.playing, msg.position), 800);
                     }
                 }
             } else if (msg.type === 'members') {
                 partyUpdateMembers(msg.members || 1);
+
             } else if (msg.type === 'change_episode') {
                 const targetAbs = msg.absolute_number || parseInt(msg.episode || '1');
-                const matched = allEpisodes.find(e => 
+                const matched = allEpisodes.find(e =>
                     (e.absolute_number && e.absolute_number === targetAbs) ||
                     (e.episode_number === parseInt(msg.episode) && e.season_number === parseInt(msg.season))
                 );
                 if (matched) {
-                    partyShowToast(`Watch party changed to Episode ${targetAbs}`);
+                    partyShowToast(`Watch party → Episode ${targetAbs}`);
                     switchEpisode(matched, true);
                 } else if (msg.mapped_id && msg.mapped_id !== playerMediaId) {
-                    partyShowToast(`Watch party changed to Episode ${targetAbs}`);
+                    partyShowToast(`Watch party → Episode ${targetAbs}`);
                     initPlayerEpisodes(msg.mapped_id).then(() => {
-                        const epAfterLoad = allEpisodes.find(e => (e.absolute_number && e.absolute_number === targetAbs) || e.episode_number === parseInt(msg.episode));
-                        if (epAfterLoad) switchEpisode(epAfterLoad, true);
+                        const ep = allEpisodes.find(e =>
+                            (e.absolute_number && e.absolute_number === targetAbs) ||
+                            e.episode_number === parseInt(msg.episode)
+                        );
+                        if (ep) switchEpisode(ep, true);
                     });
                 }
+
+            } else if (msg.type === 'change_source') {
+                // Host switched provider — apply without re-broadcasting
+                if (msg.provider && msg.ep_id) {
+                    const syntheticSrc = {
+                        url: msg.stream_url || `/api/player/payload?provider=${encodeURIComponent(msg.provider)}&ep_id=${encodeURIComponent(msg.ep_id)}`,
+                        provider: msg.provider,
+                        dub: msg.dub || false,
+                    };
+                    partyShowToast(`Watch party switched source: ${msg.provider}`);
+                    selectStreamSource(syntheticSrc, true);
+                }
+
             } else if (msg.type === 'play' || msg.type === 'pause' || msg.type === 'seek' || msg.type === 'sync') {
                 partyApplyRemoteState(!!msg.playing, msg.position);
             }
         });
 
-        partySocket.addEventListener('close', () => {
+        partySocket.addEventListener('close', (evt) => {
             partyToggle.classList.remove('active');
+            clearInterval(partySyncInterval);
+            // Auto-reconnect with exponential backoff (max 3 attempts)
+            if (!evt.wasClean && partyReconnectAttempts < 3) {
+                const delay = Math.pow(2, partyReconnectAttempts) * 1000;
+                partyReconnectAttempts++;
+                partyShowToast(`Party disconnected — reconnecting…`);
+                partyReconnectTimer = setTimeout(() => partyConnect(roomId), delay);
+            } else if (partyReconnectAttempts >= 3) {
+                partyShowToast('Watch party connection lost');
+            }
         });
 
-        setInterval(() => {
+        partySyncInterval = setInterval(() => {
             if (partySocket && partySocket.readyState === WebSocket.OPEN && !video.paused) {
-                partySend('sync', video.currentTime || 0);
+                partySend('sync', video.currentTime || 0, { playing: !video.paused });
             }
-        }, 6000);
+        }, 2000);
     }
 
     function partyOpenPanelForRoom(roomId) {
@@ -2429,19 +2730,24 @@
             partyOpenPanelForRoom(partyRoomId);
             return;
         }
-        
+
+        const urlP = new URLSearchParams(window.location.search);
         fetch('/api/party/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 title: metaTitle || topLeftTitle.textContent,
-                season: metaSeason,
-                episode: metaEpisode,
+                season: currentSeasonNum || metaSeason,
+                episode: currentEpisodeNum || metaEpisode,
+                absolute_number: currentAbsoluteNum || currentEpisodeNum,
+                mapped_id: playerMediaId || urlP.get('media_id') || urlP.get('id') || TMDB_ID || null,
+                provider: urlP.get('provider') || null,
+                ep_id: urlP.get('episodeId') || EP_ID || null,
                 year: metaYear,
                 logo: metaLogo,
                 synopsis: metaSynopsis,
                 is_live: IS_LIVE,
-                player_path: window.location.pathname + window.location.search
+                player_path: window.location.pathname + window.location.search,
             })
         })
         .then(res => res.json())
@@ -2450,6 +2756,7 @@
             const params = new URLSearchParams(window.location.search);
             params.set('party', partyRoomId);
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            partyIsHost = true;
             partyConnect(partyRoomId);
             partyOpenPanelForRoom(partyRoomId);
         })
@@ -2477,18 +2784,25 @@
     });
 
     video.addEventListener('play', () => {
-        if (!partySuppressBroadcast) partySend('play', video.currentTime || 0);
+        if (!partySuppressBroadcast && !isRemoteSeeking) partySend('play', video.currentTime || 0, { playing: true });
     });
     video.addEventListener('pause', () => {
-        if (!partySuppressBroadcast) partySend('pause', video.currentTime || 0);
+        if (!partySuppressBroadcast && !isRemoteSeeking) partySend('pause', video.currentTime || 0, { playing: false });
     });
     video.addEventListener('seeked', () => {
-        if (!partySuppressBroadcast) partySend('seek', video.currentTime || 0);
+        if (isRemoteSeeking) {
+            // Clear the remote-seek lock; don't echo back to server
+            isRemoteSeeking = false;
+            partySuppressBroadcast = false;
+        } else if (!partySuppressBroadcast) {
+            partySend('seek', video.currentTime || 0, { playing: !video.paused });
+        }
     });
 
     if (partyRoomId) {
         partyConnect(partyRoomId);
     }
+
 
     rewindBtn.addEventListener('click', () => { 
         video.currentTime -= 10; 

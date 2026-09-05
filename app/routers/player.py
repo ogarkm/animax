@@ -179,6 +179,12 @@ async def api_party_new(request: Request):
     logo = None
     synopsis = None
     full_player_path = ""
+    mapped_id = None
+    absolute_number = None
+    provider = None
+    ep_id = None
+    stream_url = None
+    dub = None
 
     if request.method == "POST":
         try:
@@ -190,6 +196,12 @@ async def api_party_new(request: Request):
             logo = body.get("logo")
             synopsis = body.get("synopsis")
             full_player_path = body.get("player_path") or body.get("search_params") or ""
+            mapped_id = body.get("mapped_id")
+            absolute_number = body.get("absolute_number")
+            provider = body.get("provider")
+            ep_id = body.get("ep_id")
+            stream_url = body.get("stream_url")
+            dub = body.get("dub")
             if body.get("is_live"):
                 media_type = "Live Stream"
             elif season and episode:
@@ -200,6 +212,9 @@ async def api_party_new(request: Request):
         title = request.query_params.get("title", "")
         season = request.query_params.get("season")
         episode = request.query_params.get("episode")
+        mapped_id = request.query_params.get("mapped_id")
+        provider = request.query_params.get("provider")
+        ep_id = request.query_params.get("ep_id")
 
     room = pp.create_party_room(
         title=title,
@@ -210,6 +225,12 @@ async def api_party_new(request: Request):
         logo=logo,
         synopsis=synopsis,
         query_params=full_player_path,
+        mapped_id=mapped_id,
+        absolute_number=absolute_number,
+        provider=provider,
+        ep_id=ep_id,
+        stream_url=stream_url,
+        dub=dub,
     )
     return {"room": room.code, "code": room.code}
 
@@ -241,6 +262,10 @@ async def api_party_info(code: str):
         "media_type": room.media_type,
         "season": room.season,
         "episode": room.episode,
+        "absolute_number": room.absolute_number,
+        "mapped_id": room.mapped_id,
+        "provider": room.provider,
+        "ep_id": room.ep_id,
         "year": room.year,
         "logo": room.logo,
         "members": member_count,
@@ -263,6 +288,15 @@ async def websocket_party(websocket: WebSocket, room_id: str):
         member_count = len(conns)
         snapshot_playing = room.playing
         snapshot_position = pp._party_live_position(room)
+        snapshot_season = room.season
+        snapshot_episode = room.episode
+        snapshot_abs_num = room.absolute_number
+        snapshot_mapped_id = room.mapped_id
+        snapshot_provider = room.provider
+        snapshot_ep_id = room.ep_id
+        snapshot_stream_url = room.stream_url
+        snapshot_title = room.title
+        snapshot_player_path = room.query_params
 
     try:
         await websocket.send_text(json.dumps({
@@ -271,6 +305,15 @@ async def websocket_party(websocket: WebSocket, room_id: str):
             "playing": snapshot_playing,
             "position": snapshot_position,
             "members": member_count,
+            "title": snapshot_title,
+            "season": snapshot_season,
+            "episode": snapshot_episode,
+            "absolute_number": snapshot_abs_num,
+            "mapped_id": snapshot_mapped_id,
+            "provider": snapshot_provider,
+            "ep_id": snapshot_ep_id,
+            "stream_url": snapshot_stream_url,
+            "player_path": snapshot_player_path,
         }))
         await pp._party_broadcast(room_code, {"type": "members", "members": member_count}, exclude_client_id=client_id)
 
@@ -293,14 +336,24 @@ async def websocket_party(websocket: WebSocket, room_id: str):
                 mapped_id = message.get("mapped_id", "")
                 ep_title = message.get("title", "")
                 player_path = message.get("player_path", "")
+                provider = message.get("provider", "")
+                ep_id = message.get("ep_id", "")
 
                 async with pp.party_lock:
                     if season:
                         room.season = season
                     if episode:
                         room.episode = episode
+                    if absolute_number is not None:
+                        room.absolute_number = absolute_number
+                    if mapped_id:
+                        room.mapped_id = mapped_id
                     if player_path:
                         room.query_params = player_path
+                    if provider:
+                        room.provider = provider
+                    if ep_id:
+                        room.ep_id = ep_id
                     room.position = 0.0
                     room.updated_at = time.time()
                     room.playing = True
@@ -313,6 +366,40 @@ async def websocket_party(websocket: WebSocket, room_id: str):
                     "mapped_id": mapped_id,
                     "title": ep_title,
                     "player_path": player_path,
+                    "provider": provider,
+                    "ep_id": ep_id,
+                    "from": client_id,
+                }, exclude_client_id=client_id)
+                continue
+
+            if msg_type in ("change_source", "source"):
+                provider = str(message.get("provider", "") or "")
+                ep_id = str(message.get("ep_id", "") or "")
+                stream_url = str(message.get("stream_url", "") or "")
+                dub = message.get("dub")
+                player_path = message.get("player_path", "")
+                pos = float(message.get("position", 0) or 0)
+
+                async with pp.party_lock:
+                    if provider:
+                        room.provider = provider
+                    if ep_id:
+                        room.ep_id = ep_id
+                    if stream_url:
+                        room.stream_url = stream_url
+                    if player_path:
+                        room.query_params = player_path
+                    room.position = pos
+                    room.updated_at = time.time()
+
+                await pp._party_broadcast(room_code, {
+                    "type": "change_source",
+                    "provider": provider,
+                    "ep_id": ep_id,
+                    "stream_url": stream_url,
+                    "dub": dub,
+                    "player_path": player_path,
+                    "position": pos,
                     "from": client_id,
                 }, exclude_client_id=client_id)
                 continue

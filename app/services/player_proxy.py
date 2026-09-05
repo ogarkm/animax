@@ -154,6 +154,12 @@ class PartyRoom:
     logo: Optional[str] = None
     synopsis: Optional[str] = None
     query_params: str = ""
+    mapped_id: Optional[str] = None
+    absolute_number: Optional[int] = None
+    provider: Optional[str] = None
+    ep_id: Optional[str] = None
+    stream_url: Optional[str] = None
+    dub: Optional[bool] = None
 
 
 party_rooms: Dict[str, PartyRoom] = {}
@@ -229,7 +235,13 @@ def create_party_room(
     year: Optional[str] = None,
     logo: Optional[str] = None,
     synopsis: Optional[str] = None,
-    query_params: str = ""
+    query_params: str = "",
+    mapped_id: Optional[str] = None,
+    absolute_number: Optional[int] = None,
+    provider: Optional[str] = None,
+    ep_id: Optional[str] = None,
+    stream_url: Optional[str] = None,
+    dub: Optional[bool] = None,
 ) -> PartyRoom:
     code = generate_party_code()
     room = PartyRoom(
@@ -242,6 +254,12 @@ def create_party_room(
         logo=logo,
         synopsis=synopsis,
         query_params=query_params,
+        mapped_id=mapped_id,
+        absolute_number=absolute_number,
+        provider=provider,
+        ep_id=ep_id,
+        stream_url=stream_url,
+        dub=dub,
     )
     party_rooms[code] = room
     return room
