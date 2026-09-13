@@ -91,12 +91,12 @@ class AnimeGGProvider(BaseProvider):
         if HAS_CURL_CFFI:
             try:
                 async with AsyncSession(impersonate="chrome") as session:
-                    resp = await session.get(url, headers=headers)
+                    resp = await session.get(url, headers=headers, timeout=10)
                     return resp.text
             except Exception as e:
                 print(f"[AnimeGG] curl_cffi request failed, falling back to httpx: {e}")
 
-        resp = await self.client.get(url, headers=headers, follow_redirects=True)
+        resp = await self.client.get(url, headers=headers, follow_redirects=True, timeout=10)
         return resp.text
 
     async def get_source_offers(
@@ -169,9 +169,16 @@ class AnimeGGProvider(BaseProvider):
                     search_url = f"{self.BASE_URL}/search/?q={urllib.parse.quote(query)}"
                     search_html = await self._fetch_html(search_url)
 
-                    # Matches: <a href="/series/..." class="mse">...<h2>Title</h2>
-                    matches = re.findall(r'<a href="(/series/[^"]+)" class="mse">.*?<h2>(.*?)</h2>', search_html, re.DOTALL | re.IGNORECASE)
+                    # New structure: <a href="/series/slug">Title text\n Episodes: N\n...</a>
+                    # Extract href and first line of link text as title
+                    matches = re.findall(
+                        r'<a href="(/series/[^"]+)"[^>]*>\s*([^\n<]+)',
+                        search_html, re.IGNORECASE
+                    )
+                    # Strip trailing whitespace from titles
+                    matches = [(href, title.strip()) for href, title in matches if title.strip()]
                     if not matches:
+                        # Legacy fallback: class="mse" with <h2>
                         matches = re.findall(r'<a href="(/series/[^"]+)"[^>]*>.*?<h2>(.*?)</h2>', search_html, re.DOTALL | re.IGNORECASE)
 
                     target_norm = normalize_title(query)
@@ -220,16 +227,28 @@ class AnimeGGProvider(BaseProvider):
                 series_url = f"{self.BASE_URL}/series/{series_slug}"
                 series_html = await self._fetch_html(series_url)
 
-                # Match episode links: <a href="..." class="anm_det_pop">...<strong>Episode X</strong>...<i class="anititle">Title</i>
+                # Match episode links - two layouts exist:
+                # New: <a href="..." class="anm_det_pop"><strong>Title N</strong></a><i class="anititle">Ep Title</i>
+                # Old: <a href="..." class="anm_det_pop">...<strong>Ep N</strong>...<i class="anititle">Title</i>
+                # Primary: match href from anm_det_pop link, strong text, then the following <i class="anititle">
                 ep_regex = re.compile(
-                    r'<a href="([^"]+)" class="anm_det_pop">[\s\S]*?<strong>(.*?)</strong>[\s\S]*?<i class="anititle">(.*?)</i>',
+                    r'<a href="([^"]+)"[^>]*class="[^"]*anm_det_pop[^"]*"[^>]*>'
+                    r'<strong>(.*?)</strong></a>'
+                    r'<i class="anititle">(.*?)</i>',
                     re.IGNORECASE
                 )
                 ep_matches = ep_regex.findall(series_html)
                 if not ep_matches:
-                    # Fallback pattern for episode items
+                    # Legacy: strong and anititle within the same <a> block
+                    ep_regex_legacy = re.compile(
+                        r'<a href="([^"]+)" class="anm_det_pop">[\s\S]*?<strong>(.*?)</strong>[\s\S]*?<i class="anititle">(.*?)</i>',
+                        re.IGNORECASE
+                    )
+                    ep_matches = ep_regex_legacy.findall(series_html)
+                if not ep_matches:
+                    # Fallback: just grab href and strong, no episode title
                     ep_regex_alt = re.compile(
-                        r'<a href="([^"]+)"[^>]*class="[^"]*anm_det_pop[^"]*"[\s\S]*?<strong>(.*?)</strong>',
+                        r'<a href="([^"]+)"[^>]*class="[^"]*anm_det_pop[^"]*"[^>]*><strong>(.*?)</strong>',
                         re.IGNORECASE
                     )
                     ep_matches_alt = ep_regex_alt.findall(series_html)
@@ -374,8 +393,27 @@ class AnimeGGProvider(BaseProvider):
         raw_video_file = best_source.get("file", "")
         raw_video_url = f"{self.BASE_URL}{raw_video_file}" if raw_video_file.startswith("/") else raw_video_file
 
+        # The /play/ endpoint redirects to the real CDN (vidcache.net).
+        # Follow the redirect now so we register & proxy the true CDN URL.
+        resolved_url = raw_video_url
+        if "/play/" in raw_video_url:
+            try:
+                head_headers = {
+                    **self.BASE_HEADERS,
+                    "Referer": embed_url,
+                }
+                head_resp = await self.client.head(
+                    raw_video_url, headers=head_headers,
+                    follow_redirects=True, timeout=15
+                )
+                if str(head_resp.url) != raw_video_url:
+                    resolved_url = str(head_resp.url)
+                    print(f"[AnimeGG] Resolved /play/ redirect → {resolved_url}")
+            except Exception as e:
+                print(f"[AnimeGG] Redirect resolve failed, using original URL: {e}")
+
         # Register host headers & proxy stream URL for CORS bypass
-        normalized = pp._normalize_stream_url(raw_video_url)
+        normalized = pp._normalize_stream_url(resolved_url)
         host = pp._normalize_host(normalized)
         pp._save_host_header_override(
             host=host,

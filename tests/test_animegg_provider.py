@@ -17,32 +17,32 @@ class AnimeGGProviderTests(unittest.IsolatedAsyncioTestCase):
 
     @patch.object(AnimeGGProvider, "_fetch_html")
     async def test_get_source_offers_success(self, mock_fetch):
-        # 1. Mock search HTML
+        # 1. Mock search HTML — matches current site structure (plain <a href="/series/..."> links)
         search_html = """
         <!DOCTYPE html>
         <html>
         <body>
-            <a href="/series/shingeki-no-kyojin" class="mse">
-                <div class="thumb"><img src="/thumb.jpg" /></div>
-                <h2>Attack on Titan</h2>
-            </a>
+            <a href="/series/attack-on-titan">Attack on Titan
+                          Episodes: 26
+                          Alt Titles : Shingeki no Kyojin
+                          Status : Completed</a>
         </body>
         </html>
         """
 
-        # 2. Mock series HTML
+        # 2. Mock series HTML — matches current site structure (inline elements on one line)
         series_html = """
         <!DOCTYPE html>
         <html>
         <body>
-            <a href="/shingeki-no-kyojin-episode-1" class="anm_det_pop">
-                <strong>Episode 1</strong>
-                <i class="anititle">To You, in 2000 Years</i>
-            </a>
-            <a href="/shingeki-no-kyojin-episode-2" class="anm_det_pop">
-                <strong>Episode 2</strong>
-                <i class="anititle">That Day</i>
-            </a>
+            <ul class="newmanga">
+                <li>
+                    <div><a href="/shingeki-no-kyojin-episode-1" class="anm_det_pop"><strong>Attack on Titan 1</strong></a><i class="anititle">To You, in 2000 Years</i></div>
+                </li>
+                <li>
+                    <div><a href="/shingeki-no-kyojin-episode-2" class="anm_det_pop"><strong>Attack on Titan 2</strong></a><i class="anititle">That Day</i></div>
+                </li>
+            </ul>
         </body>
         </html>
         """
@@ -98,16 +98,16 @@ class AnimeGGProviderTests(unittest.IsolatedAsyncioTestCase):
         </html>
         """
 
-        # 2. Mock Embed Page HTML
+        # 2. Mock Embed Page HTML — matches real site format (unquoted keys, bk field)
         embed_html = """
         <!DOCTYPE html>
         <html>
         <body>
             <script>
                 var videoSources = [
-                    {file: "/videos/stream_720p.mp4", label: "720p"},
-                    {file: "/videos/stream_1080p.mp4", label: "1080p"},
-                    {file: "/videos/stream_480p.mp4", label: "480p"}
+                    {file: "/videos/stream_720p.mp4", label: "720p", bk: "", isBk: false},
+                    {file: "/videos/stream_1080p.mp4", label: "1080p", bk: "", isBk: false},
+                    {file: "/videos/stream_480p.mp4", label: "480p", bk: "", isBk: false}
                 ];
             </script>
         </body>
@@ -135,6 +135,49 @@ class AnimeGGProviderTests(unittest.IsolatedAsyncioTestCase):
         # Should pick the highest quality (1080p)
         self.assertIn("stream_1080p.mp4", urllib.parse.unquote(state.stream_url))
         self.assertEqual(state.headers.get("Referer"), "https://www.animegg.org")
+
+    @patch.object(AnimeGGProvider, "_fetch_html")
+    async def test_extract_stream_play_redirect_resolved(self, mock_fetch):
+        """The /play/ URL should be HEAD-requested to resolve the real CDN URL."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        import httpx
+
+        ep_html = """
+        <html><body>
+            <div id="subbed-Animegg" class="tab-pane">
+                <iframe src="/embed/14860"></iframe>
+            </div>
+        </body></html>
+        """
+        embed_html = """
+        <html><body><script>
+            var videoSources = [{file: "/play/29812/video.mp4?for=abc123", label: "360p", bk: "", isBk: false}];
+        </script></body></html>
+        """
+        mock_fetch.side_effect = [ep_html, embed_html]
+
+        # Mock the httpx client's HEAD to simulate a redirect to vidcache.net
+        mock_head_resp = MagicMock()
+        mock_head_resp.url = httpx.URL("https://vidcache.net:8161/static/abc/video.mp4")
+        mock_client = AsyncMock()
+        mock_client.head = AsyncMock(return_value=mock_head_resp)
+
+        provider = AnimeGGProvider()
+        payload_data = {
+            "ep_href": "/haikyuu-episode-1",
+            "is_dub": False,
+            "media_title": "Haikyu!!",
+            "episode_num": 1,
+            "ep_title": "Episode 1"
+        }
+        encoded_token = encode_ep_id(payload_data)
+
+        with patch.object(type(provider), "client", new_callable=lambda: property(lambda self: mock_client)):
+            state = await provider.extract_stream(encoded_token)
+
+        # Should have resolved to the vidcache URL, not the /play/ URL
+        self.assertIn("vidcache.net", urllib.parse.unquote(state.stream_url))
+        mock_client.head.assert_called_once()
 
 
 if __name__ == "__main__":
